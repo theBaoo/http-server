@@ -2,4 +2,4 @@
 
 set -e
 
-clang-format -i -style=file src/*.cpp src/*.h
+clang-format -i -style=file src/*.cc src/*.hh

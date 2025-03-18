@@ -2,4 +2,4 @@
 
 set -e
 
-clang-tidy src/*.cpp src/*.h -- -std=c++20
+clang-tidy src/*.cc src/*.hh -- -std=c++20
