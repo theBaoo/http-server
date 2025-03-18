@@ -7,7 +7,7 @@
   classname(classname&&)                       = default; \
   auto operator=(classname&&)->classname&      = default
 
-#define DISALLOW_COPY_AND_MOVE(classname)                  \
+#define DISALLOW_COPY_AND_MOVE(classname)                \
   classname(const classname&)                  = delete; \
   auto operator=(const classname&)->classname& = delete; \
   classname(classname&&)                       = delete; \

@@ -19,7 +19,8 @@ enum class HTTPMethod {
 class Parser {
  public:
   // Method, Path, Version
-  static auto parseRequest(std::string& request) -> std::tuple<std::string, std::string, std::string>;
+  static auto parseRequest(std::string& request)
+      -> std::tuple<std::string, std::string, std::string>;
 
   // Field, Value
   static auto parserHeader(std::string& header) -> std::tuple<std::string, std::string>;

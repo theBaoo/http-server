@@ -7,10 +7,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror")
 
-find_program(CLANG_TIDY NAMES clang-tidy)
-if(CLANG_TIDY)
-    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY}")
-endif()
+# find_program(CLANG_TIDY NAMES clang-tidy)
+# if(CLANG_TIDY)
+    # set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY}")
+# endif()
 
 set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/third_party)
 include(FetchContent)

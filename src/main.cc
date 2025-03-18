@@ -1,8 +1,8 @@
 #include <iostream>
-#include "fmt/core.h"
-#include "tcp_server.hh"
 
+#include "fmt/core.h"
 #include "logging/logger.hh"
+#include "tcp_server.hh"
 
 auto main() -> int {
   fmt::println("HTTP Server is running on http://localhost:8080");

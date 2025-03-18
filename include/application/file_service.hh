@@ -2,8 +2,9 @@
 #define APPLICATION_FILE_SERVICE_H
 
 #include <string>
-#include "common/macro.hh"
+
 #include "common/constants.hh"
+#include "common/macro.hh"
 
 // 将请求路径映射到static目录
 // 单例
@@ -24,8 +25,9 @@ class FileService {
   }
 
   auto getFileContent(const std::string& uri) -> std::string;
+
  private:
-  FileService(): root_(root + "/static") {};
+  FileService() : root_(root + "/static"){};
   DISALLOW_COPY_AND_MOVE(FileService);
   ~FileService() = default;
 

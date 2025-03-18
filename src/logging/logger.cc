@@ -1,8 +1,8 @@
 #include "logging/logger.hh"
+
 #include <fstream>
+
 #include "fmt/core.h"
-
-
 
 auto getLogLevelString(const LogLevel level) -> std::string {
   switch (level) {
@@ -35,7 +35,9 @@ auto getCurrentDateTime() -> std::string {
 // 考虑添加一个队列，将日志消息放入队列，然后由一个线程负责写入文件
 auto Logger::getLogger(const std::string& name) -> Logger& {
   static Logger instance;
-  if (!name.empty()) { instance.setName(name); }
+  if (!name.empty()) {
+    instance.setName(name);
+  }
   return instance;
 }
 

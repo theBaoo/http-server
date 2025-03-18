@@ -1,10 +1,13 @@
 #include "protocol/response.hh"
+
 #include <string>
+
 #include "protocol/parser.hh"
 
 auto ResponseBuilder::build() -> std::string {
   std::string response;
-  response += HTTPV + " " + std::to_string(static_cast<int>(status_code_)) + " " + status_message_ + CRLF;
+  response +=
+      HTTPV + " " + std::to_string(static_cast<int>(status_code_)) + " " + status_message_ + CRLF;
   for (const auto& [field, value] : headers_) {
     response += field;
     response += ": ";

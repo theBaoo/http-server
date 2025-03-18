@@ -2,6 +2,7 @@
 #define PROTOCOL_HTTP_HANDLER_H
 
 #include <string>
+
 #include "asio.hpp"
 #include "asio/streambuf.hpp"
 #include "common/macro.hh"
@@ -13,12 +14,15 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler> {
  public:
   explicit HTTPHandler(std::shared_ptr<asio::ip::tcp::socket> socket)
       : socket_(std::move(socket)){};
-  ~HTTPHandler() { socket_->close(); }
+  ~HTTPHandler() {
+    socket_->close();
+  }
   DISALLOW_COPY_AND_MOVE(HTTPHandler);
   void handleRequest();
+
  private:
   std::shared_ptr<asio::ip::tcp::socket> socket_;
-  asio::streambuf buffer_;
+  asio::streambuf                        buffer_;
 };
 
 #endif // PROTOCOL_HTTP_HANDLER_H

@@ -10,8 +10,8 @@
 #include <string>
 #include <vector>
 
-#include "common/macro.hh"
 #include "common/constants.hh"
+#include "common/macro.hh"
 #include "fmt/core.h"
 
 enum class LogLevel {
@@ -23,16 +23,16 @@ enum class LogLevel {
   FATAL,
 };
 
-auto getLogLevelString(LogLevel level) -> std::string; 
+auto getLogLevelString(LogLevel level) -> std::string;
 
 auto getCurrentDateTime() -> std::string;
 
 class LogSink {
  public:
-  LogSink()                                  = default;
+  LogSink()                                      = default;
   virtual ~LogSink()                             = default;
   virtual void write(const std::string& message) = 0;
-  virtual void shutdown() = 0;
+  virtual void shutdown()                        = 0;
   DISALLOW_COPY_AND_MOVE(LogSink);
 };
 
@@ -76,7 +76,7 @@ class Logger {
       return;
     }
 
-    std::string now = getCurrentDateTime();
+    std::string now       = getCurrentDateTime();
     std::string level_str = getLogLevelString(level);
 
     std::string message = fmt::format("[{}] [{}] {}: {}", now, level_str, name_,
@@ -105,7 +105,7 @@ class Logger {
   void error(fmt::format_string<Args...> format, Args&&... args) {
     log(LogLevel::ERROR, format, std::forward<Args>(args)...);
   }
-  
+
   template <typename... Args>
   void warn(fmt::format_string<Args...> format, Args&&... args) {
     log(LogLevel::WARN, format, std::forward<Args>(args)...);
@@ -144,10 +144,10 @@ class Logger {
     shutdown();
   }
 
-  std::vector<std::unique_ptr<LogSink>>  sinks_;
-  std::string                   name_;
-  LogLevel                       level_ = LogLevel::INFO;
-  std::mutex                    mutex_;
+  std::vector<std::unique_ptr<LogSink>> sinks_;
+  std::string                           name_;
+  LogLevel                              level_ = LogLevel::INFO;
+  std::mutex                            mutex_;
 };
 
 #endif // LOGGING_LOGGER_H

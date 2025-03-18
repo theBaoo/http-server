@@ -1,9 +1,10 @@
 #include "application/file_service.hh"
+
 #include <fstream>
 #include <sstream>
 
-#include "logging/logger.hh"
 #include "fmt/core.h"
+#include "logging/logger.hh"
 
 auto FileService::getFileContent(const std::string& uri) -> std::string {
   if (uri == "/") {
