@@ -1,0 +1,17 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get install -y cmake clang-format clang-tidy
+      - name: Clang-Format Check
+        run: ./scripts/format.sh 
+      - name: Clang-Tidy Check
+        run: ./scripts/tidy.sh
+      - name: Build
+        run: ./scripts/build.sh
+      - name: Run Tests
+        run: ./scripts/test.sh
