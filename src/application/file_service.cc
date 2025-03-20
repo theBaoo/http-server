@@ -12,7 +12,7 @@ auto FileService::getFileContent(const std::string& uri) -> std::string {
   }
 
   std::string path = root_ + uri;
-  Logger::getLogger("file service").info("url: {}", path);
+  Logger::getLogger("file service").info("getting path: {}", path);
   std::ifstream file(path, std::ios::binary);
   if (file) {
     std::ostringstream contents;
