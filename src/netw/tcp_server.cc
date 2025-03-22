@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "application/file_service.hh"
 #include "fmt/core.h"
 #include "logging/logger.hh"
 #include "protocol/http_handler.hh"
@@ -21,7 +22,7 @@ void TCPServer::do_accept() {
   auto socket = std::make_shared<asio::ip::tcp::socket>(io_context_);
   acceptor_.async_accept(*socket, [this, socket](const asio::error_code& ecd) {
     if (!ecd) {
-      auto handler = std::make_shared<HTTPHandler>(socket);
+      auto handler = std::make_shared<HTTPHandler>(socket, FileService::getInstance());
       handlers_.push_back(handler);
       handler->handleRequest();
     } else {
