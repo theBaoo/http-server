@@ -11,51 +11,100 @@
 #include "protocol/response.hh"
 #include "protocol/uri_decoder.hh"
 
+// TODO(thebao): Reduce cognitive complexity of handleRequest function
 void HTTPHandler::handleRequest() {
-  auto self = shared_from_this();
   asio::async_read_until(
       *socket_, buffer_, END_OF_REQUEST,
-      [this, self](const asio::error_code& ecd, std::size_t length) {
-        Logger::getLogger("http handler").info("Request received with length {}", length);
-        if (!ecd) {
-          // 从 buffer_ 中提取请求数据
-          std::istream request_stream(&buffer_);
-          std::string  request((std::istreambuf_iterator<char>(request_stream)),
-                               std::istreambuf_iterator<char>());
+      [this](const asio::error_code& ecd, std::size_t length) { handleOneRequest(ecd, length); });
+}
 
-          auto [method, path, version] = Parser::parseRequest(request);
-          auto uri                     = URIDecoder::decode(path);
+auto HTTPHandler::getFileContent(const std::string& uri) -> std::string {
+  return fileService_.getFileContent(uri);
+}
 
-          StatusCode  status_code    = StatusCode::OK;
-          std::string status_message = "OK";
-          std::string content        = FileService::getInstance().getFileContent(uri);
-          if (content.empty()) {
-            status_code    = StatusCode::NOT_FOUND;
-            status_message = "Not Found";
-          }
+auto HTTPHandler::getRequest() -> std::string {
+  auto        begin = asio::buffers_begin(buffer_.data());
+  auto        end   = asio::buffers_end(buffer_.data());
+  std::string data(begin, end);
 
-          ResponseBuilder builder;
-          builder.setStatusCode(status_code);
-          builder.setStatusMessage(status_message);
-          builder.setBody(content);
-          builder.addHeader("Server", "SimpleHTTPServer");
-          builder.addHeader("Content-Type", "text/html");
-          std::string response = builder.build();
+  auto pos = data.find("\r\n\r\n");
+  if (pos == std::string::npos) {
+    return ""; // 未找到分隔符，返回空字符串或抛出异常，取决于需求
+  }
 
-          asio::async_write(*socket_, asio::buffer(response),
-                            [this, self](const asio::error_code& ecd, std::size_t) {
-                              void(this);
-                              if (ecd) {
-                                Logger::getLogger("http handler").error("Write error: {}", ecd.message());
-                              } else {
-                                Logger::getLogger("http handler").info("Response sent.");
-                              }
-                            });
-        } else if (ecd == asio::error::eof || ecd == asio::error::connection_reset) {
-          // 连接关闭，不处理请求
-          Logger::getLogger("http handler").info("Connection closed.");
-        } else {
-          Logger::getLogger("http handler").error("Read error: {}", ecd.message());
-        }
-      });
+  std::string request = data.substr(0, pos + 4);
+  buffer_.consume(pos + 4);
+
+  return request;
+}
+
+void HTTPHandler::processRequest() {
+  std::string request = getRequest();
+
+  auto [method, path, version]           = Parser::parseRequest(request);
+  auto                               uri = URIDecoder::decode(path);
+  std::map<std::string, std::string> headers;
+  while (!request.empty()) {
+    auto [field, value] = Parser::parseHeader(request);
+    if (!field.empty() && !value.empty()) {
+      headers[field] = value;
+    } else if (request.find_first_not_of("\r\n") == std::string::npos) {
+      // 读取到空行，说明请求头部解析完毕
+      break;
+    }
+  }
+
+  HTTPResponse builder;
+
+  StatusCode  status_code    = StatusCode::OK;
+  std::string status_message = "OK";
+  std::string content        = getFileContent(uri);
+  if (content.empty()) {
+    status_code    = StatusCode::NOT_FOUND;
+    status_message = "Not Found";
+  }
+
+  bool keep_alive = false;
+  if (headers.find("Connection") != headers.end()) {
+    keep_alive = headers["Connection"] == "keep-alive";
+  }
+
+  builder.setStatus(status_code)
+    .setBody(content)
+    .addHeader("Content-Type", "text/html");
+
+  sendResponse(builder.build(), keep_alive);
+}
+
+void HTTPHandler::sendResponse(const std::string& response, bool keep_alive) {
+  auto self = shared_from_this();
+  asio::async_write(*socket_, asio::buffer(response),
+                    [this, self, keep_alive](const asio::error_code& ecd, std::size_t) {
+                      void(this);
+                      if (ecd) {
+                        error("Write error: {}", ecd.message());
+                      } else {
+                        log("Response sent.");
+                        if (keep_alive) {
+                          log("Connection keep-alive.");
+                          handleRequest();
+                        } else {
+                          log("Connection closed.");
+                          socket_->close();
+                        }
+                      }
+                    });
+}
+
+void HTTPHandler::handleOneRequest(const asio::error_code& ecd, std::size_t length) {
+  log("Received {} bytes", length);
+
+  if (!ecd) {
+    processRequest();
+  } else if (ecd == asio::error::eof || ecd == asio::error::connection_reset) {
+    // 连接关闭，不处理请求
+    log("Connection closed.");
+  } else {
+    error("Read error: {}", ecd.message());
+  }
 }
