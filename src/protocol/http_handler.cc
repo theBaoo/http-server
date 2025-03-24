@@ -1,4 +1,5 @@
 #include "protocol/http_handler.hh"
+#include <sys/_types/_size_t.h>
 
 #include <iostream>
 #include <string>
@@ -42,7 +43,9 @@ void HTTPHandler::processRequest() {
   std::string request = getRequest();
 
   auto [method, path, version]           = Parser::parseRequest(request);
-  auto                               uri = URIDecoder::decode(path);
+  auto                               replaced = URIDecoder::replacePercent(path);
+  auto                               uri = URIDecoder::decode(replaced);
+
   std::map<std::string, std::string> headers;
   while (!request.empty()) {
     auto [field, value] = Parser::parseHeader(request);
@@ -54,7 +57,7 @@ void HTTPHandler::processRequest() {
     }
   }
 
-  HTTPResponse builder;
+  HTTPResponse builder(method);
 
   StatusCode  status_code    = StatusCode::OK;
   std::string status_message = "OK";
@@ -62,6 +65,23 @@ void HTTPHandler::processRequest() {
   if (content.empty()) {
     status_code    = StatusCode::NOT_FOUND;
     status_message = "Not Found";
+  }
+
+  // TODO(thebao): resolve body
+  if (method == "POST") {
+    std::string body;
+    size_t length = headers["Content-Length"].empty() ? 0 : std::stoi(headers["Content-Length"]);
+    if (length > 0) {
+      body.resize(length);
+      auto begin = asio::buffers_begin(buffer_.data());
+      body.assign(begin, begin + static_cast<std::ptrdiff_t>(length));
+      buffer_.consume(length);
+    }
+
+    auto params = Parser::parseBody(body, ContentType::FORM);
+    for (const auto& [field, value] : params) {
+      log("Field: {}, Value: {}", field, value);
+    }
   }
 
   bool keep_alive = false;
