@@ -26,6 +26,10 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler> {
   DISALLOW_COPY_AND_MOVE(HTTPHandler);
   void handleRequest();
 
+  auto isClosed() -> bool {
+    return !socket_->is_open();
+  }
+
  private:
   std::shared_ptr<asio::ip::tcp::socket> socket_;
   asio::streambuf                        buffer_;

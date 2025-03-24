@@ -102,6 +102,7 @@ void HTTPHandler::handleOneRequest(const asio::error_code& ecd, std::size_t leng
   } else if (ecd == asio::error::eof || ecd == asio::error::connection_reset) {
     // 连接关闭，不处理请求
     log("Connection closed.");
+    socket_->close();
   } else {
     error("Read error: {}", ecd.message());
   }

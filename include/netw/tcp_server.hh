@@ -11,9 +11,12 @@ class TCPServer {
  public:
   TCPServer(const std::string& address, const std::string& port);
   void start();
+  void stop();
+  void restart();
 
  private:
   void do_accept();
+  void cleanup();
 
   asio::io_context        io_context_;
   asio::ip::tcp::acceptor acceptor_;

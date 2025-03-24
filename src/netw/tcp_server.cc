@@ -1,5 +1,7 @@
 #include "netw/tcp_server.hh"
 
+#include <__algorithm/remove_if.h>
+
 #include <iostream>
 
 #include "application/file_service.hh"
@@ -18,6 +20,15 @@ void TCPServer::start() {
   io_context_.run();
 }
 
+void TCPServer::stop() {
+  io_context_.stop();
+}
+
+void TCPServer::restart() {
+  io_context_.reset();
+  start();
+}
+
 void TCPServer::do_accept() {
   auto socket = std::make_shared<asio::ip::tcp::socket>(io_context_);
   acceptor_.async_accept(*socket, [this, socket](const asio::error_code& ecd) {
@@ -29,5 +40,14 @@ void TCPServer::do_accept() {
       Logger::getLogger("tcp server").error("Accept error: {}", ecd.message());
     }
     do_accept();
+    cleanup();
   });
+}
+
+void TCPServer::cleanup() {
+  auto itr   = std::remove_if(handlers_.begin(), handlers_.end(),
+                              [](const auto& handler) { return handler->isClosed(); });
+  auto count = std::distance(itr, handlers_.end());
+  handlers_.erase(itr, handlers_.end());
+  Logger::getLogger("tcp server").info("Cleanup {} handlers", count);
 }
