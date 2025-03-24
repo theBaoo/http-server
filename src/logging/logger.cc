@@ -22,17 +22,11 @@
 //   return "UNKNOWN";
 // }
 auto getLogLevelString(LogLevel level) -> std::string {
-    static const std::map<LogLevel, std::string> levelStrings = {
-        {LogLevel::INFO, "INFO"},
-        {LogLevel::ERROR, "ERROR"},
-        {LogLevel::WARN, "WARN"},
-        {LogLevel::DEBUG, "DEBUG"},
-        {LogLevel::TRACE, "TRACE"},
-        {LogLevel::FATAL, "FATAL"}
-    };
-    return levelStrings.at(level);
+  static const std::map<LogLevel, std::string> levelStrings = {
+      {LogLevel::INFO, "INFO"},   {LogLevel::ERROR, "ERROR"}, {LogLevel::WARN, "WARN"},
+      {LogLevel::DEBUG, "DEBUG"}, {LogLevel::TRACE, "TRACE"}, {LogLevel::FATAL, "FATAL"}};
+  return levelStrings.at(level);
 }
-
 
 auto getCurrentDateTime() -> std::string {
   auto               now      = std::chrono::system_clock::now();

@@ -17,7 +17,8 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler> {
  public:
   explicit HTTPHandler(std::shared_ptr<asio::ip::tcp::socket> socket, FileService& fileService)
       : socket_(std::move(socket)), fileService_(fileService) {
-    log("HTTPHandler is created from {}, {}", socket_->remote_endpoint().address().to_string(), socket_->remote_endpoint().port());
+    log("HTTPHandler is created from {}, {}", socket_->remote_endpoint().address().to_string(),
+        socket_->remote_endpoint().port());
   };
   ~HTTPHandler() {
     socket_->close();
@@ -29,7 +30,6 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler> {
   std::shared_ptr<asio::ip::tcp::socket> socket_;
   asio::streambuf                        buffer_;
   FileService&                           fileService_;
-  
 
   template <typename... Args>
   void log(fmt::format_string<Args...> message, Args&&... args) {

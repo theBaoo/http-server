@@ -69,9 +69,7 @@ void HTTPHandler::processRequest() {
     keep_alive = headers["Connection"] == "keep-alive";
   }
 
-  builder.setStatus(status_code)
-    .setBody(content)
-    .addHeader("Content-Type", "text/html");
+  builder.setStatus(status_code).setBody(content).addHeader("Content-Type", "text/html");
 
   sendResponse(builder.build(), keep_alive);
 }

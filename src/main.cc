@@ -10,7 +10,7 @@ auto main() -> int {
 
   TCPServer server(ADDR, PORT);
   server.start();
-  
+
   Logger::getLogger().shutdown();
   return 0;
 }

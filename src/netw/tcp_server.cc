@@ -26,7 +26,7 @@ void TCPServer::do_accept() {
       handlers_.push_back(handler);
       handler->handleRequest();
     } else {
-      Logger::getLogger("tcp server").error("Accept error: {}", ecd.message()); 
+      Logger::getLogger("tcp server").error("Accept error: {}", ecd.message());
     }
     do_accept();
   });
