@@ -5,6 +5,7 @@
 #include <string>
 
 const size_t MAX_BUFFER_SIZE = 1024;
+const size_t MAX_CONNECTIONS = 10;
 
 const std::string ADDR = "0.0.0.0";
 const std::string PORT = "8080";

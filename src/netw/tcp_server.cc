@@ -21,6 +21,18 @@ void TCPServer::start() {
   io_context_.run();
 }
 
+void TCPServer::startWithMultipleThreads(int threads) {
+  do_accept();
+  std::vector<std::thread> workers;
+  workers.reserve(threads);
+  for (int i = 0; i < threads; ++i) {
+    workers.emplace_back([this] { io_context_.run(); });
+  }
+  for (auto& worker : workers) {
+    worker.join();
+  }
+}
+
 void TCPServer::stop() {
   io_context_.stop();
 }
