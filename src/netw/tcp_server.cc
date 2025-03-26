@@ -2,7 +2,6 @@
 
 // #include <__algorithm/remove_if.h>
 #include <algorithm>
-
 #include <iostream>
 
 #include "application/file_service.hh"
@@ -46,7 +45,7 @@ void TCPServer::do_accept() {
   auto socket = std::make_shared<asio::ip::tcp::socket>(io_context_);
   acceptor_.async_accept(*socket, [this, socket](const asio::error_code& ecd) {
     if (!ecd) {
-      auto handler = std::make_shared<HTTPHandler>(socket, FileService::getInstance());
+      auto handler = std::make_shared<HTTPHandler>(socket);
       handlers_.push_back(handler);
       handler->handleRequest();
     } else {

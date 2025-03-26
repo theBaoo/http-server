@@ -1,10 +1,11 @@
 #include "protocol/http_handler.hh"
-#include <cstddef>
 
+#include <cstddef>
 #include <iostream>
 #include <string>
 
 #include "application/file_service.hh"
+#include "application/service.hh"
 #include "common/constants.hh"
 #include "fmt/core.h"
 #include "logging/logger.hh"
@@ -17,10 +18,6 @@ void HTTPHandler::handleRequest() {
   asio::async_read_until(
       *socket_, buffer_, END_OF_REQUEST,
       [this](const asio::error_code& ecd, std::size_t length) { handleOneRequest(ecd, length); });
-}
-
-auto HTTPHandler::getFileContent(const std::string& uri) -> std::string {
-  return fileService_.getFileContent(uri);
 }
 
 auto HTTPHandler::getRequest() -> std::string {
@@ -36,15 +33,17 @@ auto HTTPHandler::getRequest() -> std::string {
   std::string request = data.substr(0, pos + 4);
   buffer_.consume(pos + 4);
 
+  log("Request: {}", request);
   return request;
 }
 
 void HTTPHandler::processRequest() {
+  // ----------------- Request -----------------
   std::string request = getRequest();
 
-  auto [method, path, version]           = Parser::parseRequest(request);
-  auto                               replaced = URIDecoder::replacePercent(path);
-  auto                               uri = URIDecoder::decode(replaced);
+  auto [method, path, version] = Parser::parseRequest(request);
+  auto replaced                = URIDecoder::replacePercent(path);
+  auto uri                     = URIDecoder::decode(replaced);
 
   std::map<std::string, std::string> headers;
   while (!request.empty()) {
@@ -56,12 +55,15 @@ void HTTPHandler::processRequest() {
       break;
     }
   }
+  // ----------------- Request -----------------
 
-  HTTPResponse builder(method);
+  // ----------------- Service -----------------
+  RequestContext  request_context{};
+  ResponseContext response = (*router_[uri])(request_context);
 
-  StatusCode  status_code    = StatusCode::OK;
-  std::string status_message = "OK";
-  std::string content        = getFileContent(uri);
+  StatusCode  status_code    = response.getStatusCode();
+  std::string status_message = response.getStatusMessage();
+  std::string content        = response.getBody().value_or("");
   if (content.empty()) {
     status_code    = StatusCode::NOT_FOUND;
     status_message = "Not Found";
@@ -88,10 +90,14 @@ void HTTPHandler::processRequest() {
   if (headers.find("Connection") != headers.end()) {
     keep_alive = headers["Connection"] == "keep-alive";
   }
+  // ----------------- Service -----------------
 
+  // ----------------- Response -----------------
+  HTTPResponse builder(method);
   builder.setStatus(status_code).setBody(content).addHeader("Content-Type", "text/html");
 
   sendResponse(builder.build(), keep_alive);
+  // ----------------- Response -----------------
 }
 
 void HTTPHandler::sendResponse(const std::string& response, bool keep_alive) {
