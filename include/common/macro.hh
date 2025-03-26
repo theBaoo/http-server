@@ -37,4 +37,12 @@
     Logger::getLogger(module).error(message, std::forward<Args>(args)...); \
   }
 
+#define DEFINE_GETTER_AND_SETTER(type, name, member) \
+  void set##name(const type& value) {                \
+    member = value;                                  \
+  }                                                  \
+  [[nodiscard]] auto get##name() const->type {       \
+    return member;                                   \
+  }
+
 #endif // COMMON_MACRO_H
