@@ -8,10 +8,12 @@
 #include <mutex>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "common/constants.hh"
 #include "common/macro.hh"
+#include "concurrency/thread_id_manager.hh"
 #include "fmt/color.h"
 #include "fmt/core.h"
 
@@ -29,22 +31,28 @@ auto getCurrentDateTime() -> std::string;
 
 class LogSink {
  public:
-  LogSink()                                      = default;
-  virtual ~LogSink()                             = default;
-  virtual void write(const std::string& message) = 0;
-  virtual void shutdown()                        = 0;
-  virtual bool supportsColor() const             = 0; // 新增接口
+  LogSink()                                                    = default;
+  virtual ~LogSink()                                           = default;
+  virtual void               write(const std::string& message) = 0;
+  virtual void               shutdown()                        = 0;
+  [[nodiscard]] virtual auto supportsColor() const -> bool     = 0; // 新增接口
   DISALLOW_COPY_AND_MOVE(LogSink);
 };
 
 class ConsoleSink : public LogSink {
  public:
   void write(const std::string& message) override {
-    fmt::println("{}", message);
+    auto pos = message.find("\r\n");
+    if (pos == std::string::npos) {
+      fmt::println("{}", message);
+    } else {
+      fmt::println("{}", message + " (Check the log file for more details)");
+    }
   }
+
   void shutdown() override {
   }
-  bool supportsColor() const override {
+  [[nodiscard]] auto supportsColor() const -> bool override {
     return true;
   } // 控制台支持颜色
 };
@@ -66,7 +74,7 @@ class FileSink : public LogSink {
     }
   }
 
-  bool supportsColor() const override {
+  auto supportsColor() const -> bool override {
     return false;
   } // 文件不支持颜色
 
@@ -90,8 +98,12 @@ class Logger {
     std::string level_str     = getLogLevelString(level);
     std::string plain_message = fmt::format(format, std::forward<Args>(args)...);
 
+    std::string tid = ThreadIdMapper::getReadableId();
+    // std::string tid = getFormattedThreadId();
+
     // 纯文本消息
-    std::string message = fmt::format("[{}] [{}] {}: {}", now, level_str, name_, plain_message);
+    std::string message =
+        fmt::format("[{}] {} {} {}: {}", now, level_str, tid, name_, plain_message);
 
     // 选择日志级别颜色
     fmt::text_style level_style;
@@ -116,11 +128,12 @@ class Logger {
         break;
     }
     fmt::text_style name_style = fg(fmt::color::light_coral);
+    fmt::text_style tid_style  = fg(fmt::color::light_slate_gray);
 
     // 带颜色的消息：使用 fmt::format 并应用样式
     std::string colored_message = fmt::format(
-        "[{}] [{}] {}: {}", now, fmt::format(level_style, "{}", level_str), // 应用级别颜色
-        fmt::format(name_style, "{}", name_),                               // 应用名称颜色
+        "[{}] {} {} {}: {}", now, fmt::format(level_style, "{}", level_str), // 应用级别颜色
+        fmt::format(tid_style, "{}", tid), fmt::format(name_style, "{}", name_), // 应用名称颜色
         plain_message // 消息内容保持无色
     );
 
