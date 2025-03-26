@@ -7,7 +7,6 @@
 
 #include "common/macro.hh"
 #include "fmt/color.h"
-
 #include "logging/logger.hh"
 
 enum class HTTPMethod {
@@ -38,12 +37,13 @@ class Parser {
   // Field: Value 只有value前允许多空格, 一般为可选空格(0-1)
   static auto parseHeader(std::string& header) -> std::tuple<std::string, std::string>;
 
-  static auto parseBody(std::string& body, ContentType type) -> std::unordered_map<std::string, std::string>;
+  static auto parseBody(std::string& body, ContentType type)
+      -> std::unordered_map<std::string, std::string>;
 
-  static auto parseForm  (std::string& body) -> std::pair<std::string, std::string>;
-  static auto parseJson  (std::string& body) -> std::pair<std::string, std::string>;
-  static auto parsePlain (std::string& body) -> std::pair<std::string, std::string>;
-  static auto parseXml   (std::string& body) -> std::pair<std::string, std::string>;
+  static auto parseForm(std::string& body) -> std::pair<std::string, std::string>;
+  static auto parseJson(std::string& body) -> std::pair<std::string, std::string>;
+  static auto parsePlain(std::string& body) -> std::pair<std::string, std::string>;
+  static auto parseXml(std::string& body) -> std::pair<std::string, std::string>;
 
   ENABLE_STATIC_INFO("parser")
   ENABLE_STATIC_ERROR("parser")

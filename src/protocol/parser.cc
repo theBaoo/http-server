@@ -7,7 +7,7 @@
 
 #include "logging/logger.hh"
 
-auto Parser::parseRequest(std::string &request)
+auto Parser::parseRequest(std::string& request)
     -> std::tuple<std::string, std::string, std::string> {
   std::string method;
   std::string path;
@@ -32,7 +32,7 @@ auto Parser::parseRequest(std::string &request)
   return std::make_tuple(method, path, version);
 }
 
-auto Parser::parseHeader(std::string &header) -> std::tuple<std::string, std::string> {
+auto Parser::parseHeader(std::string& header) -> std::tuple<std::string, std::string> {
   std::string field;
   std::string value;
 
@@ -63,8 +63,9 @@ auto Parser::parseHeader(std::string &header) -> std::tuple<std::string, std::st
   return std::make_tuple(field, value);
 }
 
-auto Parser::parseBody(std::string &body, ContentType type) -> std::unordered_map<std::string, std::string> {
-  auto parser = [type](std::string &body) -> std::pair<std::string, std::string> {
+auto Parser::parseBody(std::string& body, ContentType type)
+    -> std::unordered_map<std::string, std::string> {
+  auto parser = [type](std::string& body) -> std::pair<std::string, std::string> {
     switch (type) {
       case ContentType::FORM:
         return parseForm(body);

@@ -1,20 +1,24 @@
 #include "protocol/uri_decoder.hh"
+
 #include <cstddef>
 
 auto URIDecoder::decode(const std::string& uri) -> std::string {
   std::string decoded = uri;
-  size_t pos = decoded.find('?');
+  size_t      pos     = decoded.find('?');
   if (pos != std::string::npos) {
     decoded = uri.substr(0, pos);
   }
   return decoded;
 }
 
-auto URIDecoder::parseParam(const std::string& uri) -> std::unordered_map<std::string, std::string> {
+auto URIDecoder::parseParam(const std::string& uri)
+    -> std::unordered_map<std::string, std::string> {
   std::unordered_map<std::string, std::string> params;
-  size_t pos = uri.find('?');
-  if (pos == std::string::npos) { return params; }
-  
+  size_t                                       pos = uri.find('?');
+  if (pos == std::string::npos) {
+    return params;
+  }
+
   std::string query = uri.substr(pos + 1);
   size_t      start = 0;
   while (start < query.size()) {
@@ -28,7 +32,7 @@ auto URIDecoder::parseParam(const std::string& uri) -> std::unordered_map<std::s
     }
     start = end + 1;
   }
-  
+
   return params;
 }
 
@@ -45,6 +49,6 @@ auto URIDecoder::replacePercent(const std::string& uri) -> std::string {
       replaced += uri[i];
     }
   }
- 
+
   return replaced;
 }
