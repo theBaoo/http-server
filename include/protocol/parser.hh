@@ -6,10 +6,10 @@
 #include <unordered_map>
 
 #include "application/service.hh"
+#include "common/enum.hh"
 #include "common/macro.hh"
 #include "fmt/color.h"
 #include "logging/logger.hh"
-#include "common/enum.hh"
 
 // 解析 HTTP 请求行和头部字段
 class Parser {

@@ -1,4 +1,5 @@
 #include "application/service.hh"
+
 #include "protocol/response.hh"
 
 UnimplementedService::UnimplementedService() {
@@ -8,10 +9,9 @@ UnimplementedService::UnimplementedService() {
   ctx.addHeader("Content-Type", "text/html");
 }
 
-auto UnimplementedService::handle([[maybe_unused]]RequestContext &request) -> ResponseContext {
+auto UnimplementedService::handle([[maybe_unused]] RequestContext &request) -> ResponseContext {
   return ctx;
 }
 
 DefaultService::DefaultService() {
-  
 }

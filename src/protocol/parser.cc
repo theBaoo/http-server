@@ -6,8 +6,8 @@
 #include <tuple>
 
 #include "application/service.hh"
-#include "protocol/uri_decoder.hh"
 #include "logging/logger.hh"
+#include "protocol/uri_decoder.hh"
 
 auto Parser::parse(std::string request) -> RequestContext {
   RequestContext ctx;
@@ -29,7 +29,7 @@ auto Parser::parse(std::string request) -> RequestContext {
   ctx.setMethod(method);
   ctx.setUri(uri);
   ctx.setVersion(version);
-  
+
   return ctx;
 }
 

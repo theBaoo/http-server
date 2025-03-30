@@ -2,9 +2,11 @@
 #define APPLICATION_CONTEXT_HH
 
 #include <string>
+#include <optional>
 #include <unordered_map>
-#include "common/macro.hh"
+
 #include "common/enum.hh"
+#include "common/macro.hh"
 
 class RequestContext {
   using Headers = std::unordered_map<std::string, std::string>;
@@ -23,7 +25,7 @@ class RequestContext {
   DEFINE_GETTER_AND_SETTER(std::string, Method, method_);
   DEFINE_GETTER_AND_SETTER(std::string, Version, version_);
 
-  [[nodiscard]]auto getBody() const -> std::string {
+  [[nodiscard]] auto getBody() const -> std::string {
     return body_;
   }
 

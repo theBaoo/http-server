@@ -20,9 +20,10 @@
 
 // TODO(thebao): Reduce cognitive complexity of handleRequest function
 void HTTPHandler::handleRequest() {
-  boost::asio::async_read_until(
-      *socket_, buffer_, END_OF_REQUEST,
-      [this](const boost::system::error_code& ecd, std::size_t length) { handleOneRequest(ecd, length); });
+  boost::asio::async_read_until(*socket_, buffer_, END_OF_REQUEST,
+                                [this](const boost::system::error_code& ecd, std::size_t length) {
+                                  handleOneRequest(ecd, length);
+                                });
 }
 
 void HTTPHandler::handleOneRequest(const boost::system::error_code& ecd, std::size_t length) {
@@ -60,7 +61,7 @@ auto HTTPHandler::getRequest() -> std::string {
 }
 
 auto HTTPHandler::getBody() -> void {
-  auto content_length = request_ctx_.getHeader("Content-Length");
+  auto content_length    = request_ctx_.getHeader("Content-Length");
   auto transfer_encoding = request_ctx_.getHeader("Transfer-Encoding");
 
   if (content_length.empty() && transfer_encoding == "chunked") {
@@ -81,30 +82,31 @@ auto HTTPHandler::getBodyWithLength(std::size_t length) -> void {
   using boost::asio::transfer_at_least;
   using boost::system::error_code;
 
-  std::function<void(const error_code& ecd, size_t length)> handler = [this, length, &handler](const error_code& ecd,
-                                                       std::size_t bytes_transferred) mutable {
-    if (!ecd) {
-      std::string data(buffers_begin(buffer_.data()),
-                       buffers_begin(buffer_.data()) + static_cast<std::ptrdiff_t>(bytes_transferred));
-      buffer_.consume(bytes_transferred);
-      request_ctx_.addBody(data);
+  std::function<void(const error_code& ecd, size_t length)> handler =
+      [this, length, &handler](const error_code& ecd, std::size_t bytes_transferred) mutable {
+        if (!ecd) {
+          std::string data(
+              buffers_begin(buffer_.data()),
+              buffers_begin(buffer_.data()) + static_cast<std::ptrdiff_t>(bytes_transferred));
+          buffer_.consume(bytes_transferred);
+          request_ctx_.addBody(data);
 
-      size_t received = request_ctx_.getBody().size();
-      if (received < length) {
-        // 继续读取剩余部分
-        async_read(*socket_, buffer_, transfer_at_least(1), handler);
-      } else {
-        processBodyComplete();
-      }
-    } else {
-      if (ecd == boost::asio::error::eof || ecd == boost::asio::error::connection_reset) {
-        log("Connection closed.");
-        socket_->close();
-      } else {
-        error("Read error: {}", ecd.message());
-      }
-    }
-  };
+          size_t received = request_ctx_.getBody().size();
+          if (received < length) {
+            // 继续读取剩余部分
+            async_read(*socket_, buffer_, transfer_at_least(1), handler);
+          } else {
+            processBodyComplete();
+          }
+        } else {
+          if (ecd == boost::asio::error::eof || ecd == boost::asio::error::connection_reset) {
+            log("Connection closed.");
+            socket_->close();
+          } else {
+            error("Read error: {}", ecd.message());
+          }
+        }
+      };
 
   // 先检查缓冲区有无需要的数据, 再异步读取
   if (buffer_.size() >= length) {
@@ -127,7 +129,7 @@ auto HTTPHandler::getBodyWithChunked() -> void {
 void HTTPHandler::processRequest() {
   // ----------------- Request -----------------
   std::string request = getRequest();
-  request_ctx_ = Parser::parse(request);
+  request_ctx_        = Parser::parse(request);
   // ----------------- Request -----------------
   if (request_ctx_.getMethod() == "POST") {
     getBody();
@@ -167,19 +169,19 @@ void HTTPHandler::sendResponse(const std::string& response, bool keep_alive) {
 
   auto self = shared_from_this();
   async_write(*socket_, buffer(response),
-                    [this, self, keep_alive](const error_code& ecd, std::size_t) {
-                      void(this);
-                      if (ecd) {
-                        error("Write error: {}", ecd.message());
-                      } else {
-                        log("Response sent.");
-                        if (keep_alive) {
-                          log("Connection keep-alive.");
-                          handleRequest();
-                        } else {
-                          log("Connection closed.");
-                          socket_->close();
-                        }
-                      }
-                    });
+              [this, self, keep_alive](const error_code& ecd, std::size_t) {
+                void(this);
+                if (ecd) {
+                  error("Write error: {}", ecd.message());
+                } else {
+                  log("Response sent.");
+                  if (keep_alive) {
+                    log("Connection keep-alive.");
+                    handleRequest();
+                  } else {
+                    log("Connection closed.");
+                    socket_->close();
+                  }
+                }
+              });
 }

@@ -4,10 +4,10 @@
 #include <string>
 #include <unordered_map>
 
-#include "application/file_service.hh"
 #include "application/context.hh"
-#include "common/macro.hh"
+#include "application/file_service.hh"
 #include "common/enum.hh"
+#include "common/macro.hh"
 #include "logging/logger.hh"
 
 class Service {
@@ -33,7 +33,7 @@ class UnimplementedService : public Service {
   // TODO(thebao): 解决参数容易混淆的问题
   // Fixed: 抽象类传递数据
   auto handle(RequestContext& request) -> ResponseContext override;
- 
+
  private:
   ResponseContext ctx;
 };
@@ -62,9 +62,10 @@ class DefaultService : public Service {
     result.addHeader("Content-Type", "text/html");
     // 添加body的长度, 否则浏览器可能停止渲染
     result.addHeader("Content-Length", std::to_string(content.size()));
-  
+
     return result;
   }
+
  private:
   ResponseContext ctx;
 };

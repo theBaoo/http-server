@@ -3,9 +3,10 @@
 
 #include <map>
 #include <string>
+
+#include "application/context.hh"
 #include "application/service.hh"
 #include "common/enum.hh"
-#include "application/context.hh"
 
 const std::string HTTPV = "HTTP/1.1";
 const std::string CRLF  = "\r\n";
@@ -117,7 +118,7 @@ class HTTPResponse {
   std::string                        status_message_;
   std::map<std::string, std::string> headers_;
   std::optional<std::string>         body_; // 使用 optional 支持无正文情况
-  ResponseContext ctx_;
+  ResponseContext                    ctx_;
 };
 
 #endif // PROTOCOL_RESPONSE_H

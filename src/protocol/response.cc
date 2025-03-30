@@ -1,9 +1,10 @@
 #include "protocol/response.hh"
+
 #include <string>
 
 auto HTTPResponse::buildWithContext() const -> std::string {
-  std::string response = "HTTP/1.1 " + std::to_string(static_cast<int>(ctx_.getStatusCode())) + " " +
-                         ctx_.getStatusMessage() + CRLF;
+  std::string response = "HTTP/1.1 " + std::to_string(static_cast<int>(ctx_.getStatusCode())) +
+                         " " + ctx_.getStatusMessage() + CRLF;
   for (const auto& [field, value] : ctx_.getHeaders()) {
     response += field;
     response += ": ";

@@ -1,9 +1,9 @@
 #ifndef PROTOCOL_HTTP_HANDLER_H
 #define PROTOCOL_HTTP_HANDLER_H
 
-#include <string>
 #include <boost/asio.hpp>
 #include <boost/asio/streambuf.hpp>
+#include <string>
 
 #include "application/context.hh"
 #include "application/file_service.hh"
@@ -57,8 +57,8 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler> {
   auto getBody() -> void;
   auto getBodyWithLength(std::size_t length) -> void;
   auto getBodyWithChunked() -> void;
-//  chunked transfer encoding
-//  auto getBody(RequestContext ctx) -> void;
+  //  chunked transfer encoding
+  //  auto getBody(RequestContext ctx) -> void;
 
   void handleOneRequest(const boost::system::error_code& ecd, std::size_t length);
 

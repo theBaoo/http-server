@@ -10,8 +10,8 @@
 #include "protocol/http_handler.hh"
 
 TCPServer::TCPServer(const std::string& address, const std::string& port)
-    : acceptor_(io_context_,
-                boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), std::stoi(port))) {
+    : acceptor_(io_context_, boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address),
+                                                            std::stoi(port))) {
   Logger::getLogger("tcp server").info("TCP server is created.");
 }
 
