@@ -9,7 +9,8 @@ auto main() -> int {
   Logger::getLogger("HTTP Server").info("HTTP Server is running on http://localhost:8080");
 
   TCPServer server(ADDR, PORT);
-  server.start();
+  // server.start();
+  server.startWithMultipleThreads(4);
 
   Logger::getLogger().shutdown();
   return 0;

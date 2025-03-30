@@ -3,22 +3,35 @@
 
 #include <map>
 #include <string>
+#include "application/service.hh"
+#include "common/enum.hh"
+#include "application/context.hh"
 
 const std::string HTTPV = "HTTP/1.1";
 const std::string CRLF  = "\r\n";
 
-enum class StatusCode {
-  OK                    = 200,
-  BAD_REQUEST           = 400,
-  NOT_FOUND             = 404,
-  INTERNAL_SERVER_ERROR = 500,
-};
+// constexpr std::string_view getReasonPhrase(HttpStatus status) {
+//   switch (status) {
+//     case HttpStatus::OK:
+//       return "OK";
+//     case HttpStatus::NotFound:
+//       return "Not Found";
+//     case HttpStatus::InternalServerError:
+//       return "Internal Server Error";
+//     default:
+//       return "Unknown";
+//   }
+// }
 
 class HTTPResponse {
  public:
   // 构造时指定请求方法，影响响应行为
   explicit HTTPResponse(std::string method = "GET")
       : method_(std::move(method)), status_message_("OK") {
+    headers_["Server"] = "SimpleHTTPServer"; // 默认头部
+  }
+
+  explicit HTTPResponse(ResponseContext& ctx) : ctx_(ctx) {
     headers_["Server"] = "SimpleHTTPServer"; // 默认头部
   }
 
@@ -65,6 +78,8 @@ class HTTPResponse {
     return response;
   }
 
+  [[nodiscard]] auto buildWithContext() const -> std::string;
+
   // 获取当前方法（用于调试或外部逻辑）
   [[nodiscard]] auto getMethod() const -> std::string {
     return method_;
@@ -102,6 +117,7 @@ class HTTPResponse {
   std::string                        status_message_;
   std::map<std::string, std::string> headers_;
   std::optional<std::string>         body_; // 使用 optional 支持无正文情况
+  ResponseContext ctx_;
 };
 
 #endif // PROTOCOL_RESPONSE_H

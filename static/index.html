@@ -19,12 +19,66 @@
         p {
             color: #666;
         }
+
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
 <body>
     <h1>Welcome to My HTTP Server</h1>
     <p>This is a simple HTTP server built with C++ and ASIO.</p>
+
+    <!-- 添加按钮 -->
+    <button id="postButton">Send POST Request</button>
+    <button id="headButton">Send HEAD Request</button>
+
+    <script>
+        // 发送 POST 请求
+        // 发送 POST 请求，使用 application/x-www-form-urlencoded 格式
+        document.getElementById("postButton").addEventListener("click", () => {
+            // 使用 URLSearchParams 构建表单数据
+            const formData = new URLSearchParams();
+            formData.append("message", "Hello, server!");
+            formData.append("user", "test_user");
+
+            fetch("/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: formData.toString() // 将表单数据序列化为字符串
+            })
+                .then(response => response.text())
+                .then(data => {
+                    console.log("Response from server:", data);
+                    alert("POST request sent with form data! Check console for response.");
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("Failed to send POST request.");
+                });
+        });
+
+        // 发送 HEAD 请求
+        document.getElementById("headButton").addEventListener("click", () => {
+            fetch("/", {
+                method: "HEAD"
+            })
+                .then(response => {
+                    console.log("Response headers:", response.headers);
+                    alert("HEAD request sent! Check console for headers.");
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("Failed to send HEAD request.");
+                });
+        });
+    </script>
 </body>
 
 </html>

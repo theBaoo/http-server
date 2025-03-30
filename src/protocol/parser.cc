@@ -5,7 +5,33 @@
 #include <string>
 #include <tuple>
 
+#include "application/service.hh"
+#include "protocol/uri_decoder.hh"
 #include "logging/logger.hh"
+
+auto Parser::parse(std::string request) -> RequestContext {
+  RequestContext ctx;
+
+  auto [method, path, version] = parseRequest(request);
+  auto replaced                = URIDecoder::replacePercent(path);
+  auto uri                     = URIDecoder::decode(replaced);
+
+  while (!request.empty()) {
+    auto [field, value] = Parser::parseHeader(request);
+    if (!field.empty() && !value.empty()) {
+      ctx.addHeader(field, value);
+    } else if (request.find_first_not_of("\r\n") == std::string::npos) {
+      // 读取到空行，说明请求头部解析完毕
+      break;
+    }
+  }
+
+  ctx.setMethod(method);
+  ctx.setUri(uri);
+  ctx.setVersion(version);
+  
+  return ctx;
+}
 
 auto Parser::parseRequest(std::string& request)
     -> std::tuple<std::string, std::string, std::string> {

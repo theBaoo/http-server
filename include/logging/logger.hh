@@ -39,6 +39,7 @@ class LogSink {
   DISALLOW_COPY_AND_MOVE(LogSink);
 };
 
+// MacOS 终端不支持真彩色
 class ConsoleSink : public LogSink {
  public:
   void write(const std::string& message) override {
@@ -106,6 +107,8 @@ class Logger {
         fmt::format("[{}] {} {} {}: {}", now, level_str, tid, name_, plain_message);
 
     // 选择日志级别颜色
+    // fmt::terminal_color 为256色
+    // fmt::color 为真彩色, MacOS的Terminal.app不支持
     fmt::text_style level_style;
     switch (level) {
       case LogLevel::INFO:

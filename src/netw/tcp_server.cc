@@ -11,7 +11,7 @@
 
 TCPServer::TCPServer(const std::string& address, const std::string& port)
     : acceptor_(io_context_,
-                asio::ip::tcp::endpoint(asio::ip::make_address(address), std::stoi(port))) {
+                boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), std::stoi(port))) {
   Logger::getLogger("tcp server").info("TCP server is created.");
 }
 
@@ -42,8 +42,10 @@ void TCPServer::restart() {
 }
 
 void TCPServer::do_accept() {
-  auto socket = std::make_shared<asio::ip::tcp::socket>(io_context_);
-  acceptor_.async_accept(*socket, [this, socket](const asio::error_code& ecd) {
+  using boost::asio::ip::tcp;
+  using boost::system::error_code;
+  auto socket = std::make_shared<tcp::socket>(io_context_);
+  acceptor_.async_accept(*socket, [this, socket](const error_code& ecd) {
     if (!ecd) {
       auto handler = std::make_shared<HTTPHandler>(socket);
       handlers_.push_back(handler);
