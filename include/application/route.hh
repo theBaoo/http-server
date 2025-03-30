@@ -38,8 +38,8 @@ class Router {
     return getService(uri);
   }
 
-  ENABLE_INFO("router");
-  ENABLE_ERROR("router");
+  ENABLE_INFO("router")
+  ENABLE_ERROR("router")
 
  private:
   // Router 只负责动态路由, 不负责管理Service的生命周期, 所以直接只用raw pointer
