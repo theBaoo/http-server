@@ -7,24 +7,44 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror")
 
-find_program(CLANG_TIDY NAMES clang-tidy)
-if(CLANG_TIDY)
-    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY}")
-endif()
+# find_program(CLANG_TIDY NAMES clang-tidy)
+# if(CLANG_TIDY)
+    # set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY}")
+# endif()
 
 set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/third_party)
 include(FetchContent)
 
+# FetchContent_Declare(
+#   asio
+#   GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
+#   GIT_TAG asio-1-28-0
+# )
+# FetchContent_MakeAvailable(asio)
+# # asio 没有 CMakeLists.txt 适配 FetchContent_MakeAvailable
+# # 主要是一个 header-only 库, 并没有 CMake 自带的安装规则
+# # 所以需要手动 include_directories
+# include_directories(${asio_SOURCE_DIR}/asio/include)
+
+# 引入 Boost（包含 Asio）
 FetchContent_Declare(
-  asio
-  GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
-  GIT_TAG asio-1-28-0
+    boost
+    GIT_REPOSITORY https://github.com/boostorg/boost.git
+    GIT_TAG boost-1.85.0
+    GIT_SHALLOW TRUE
 )
-FetchContent_MakeAvailable(asio)
-# asio 没有 CMakeLists.txt 适配 FetchContent_MakeAvailable
-# 主要是一个 header-only 库, 并没有 CMake 自带的安装规则
-# 所以需要手动 include_directories
-include_directories(${asio_SOURCE_DIR}/asio/include)
+# 只构建必要的 Boost 组件
+set(BOOST_INCLUDE_LIBRARIES asio system) # 限制为 asio 和 system
+FetchContent_MakeAvailable(boost)
+
+# 引入 OpenSSL
+# FetchContent_Declare(
+#     openssl
+#     GIT_REPOSITORY https://github.com/openssl/openssl.git
+#     GIT_TAG OpenSSL_1_1_1w
+#     GIT_SHALLOW TRUE
+# )
+# FetchContent_MakeAvailable(openssl)
 
 FetchContent_Declare(
   googletest
@@ -32,7 +52,10 @@ FetchContent_Declare(
   GIT_TAG v1.14.0
 )
 FetchContent_MakeAvailable(googletest)
+# include_directories(third_party/googletest-src/googlemock/include)
 
+# TODO(thebao): 常用库构建本地缓存
+# set(FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR}/deps CACHE PATH "Dependencies directory")
 FetchContent_Declare(
   fmt
   GIT_REPOSITORY https://github.com/fmtlib/fmt.git

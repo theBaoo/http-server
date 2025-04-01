@@ -1,9 +1,10 @@
 #include "application/file_service.hh"
+
 #include <fstream>
 #include <sstream>
 
-#include "logging/logger.hh"
 #include "fmt/core.h"
+#include "logging/logger.hh"
 
 auto FileService::getFileContent(const std::string& uri) -> std::string {
   if (uri == "/") {
@@ -11,7 +12,7 @@ auto FileService::getFileContent(const std::string& uri) -> std::string {
   }
 
   std::string path = root_ + uri;
-  Logger::getLogger("file service").info("url: {}", path);
+  Logger::getLogger("file service").info("getting path: {}", path);
   std::ifstream file(path, std::ios::binary);
   if (file) {
     std::ostringstream contents;

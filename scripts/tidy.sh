@@ -2,4 +2,8 @@
 
 set -e
 
-clang-tidy src/*.cpp src/*.h -- -std=c++20
+SOURCE_FILES=$(find src include -name "*.cc" -o -name "*.hh")
+
+for FILE in $SOURCE_FILES; do
+    clang-tidy $FILE -- -Iinclude
+done

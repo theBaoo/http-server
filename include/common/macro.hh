@@ -7,10 +7,42 @@
   classname(classname&&)                       = default; \
   auto operator=(classname&&)->classname&      = default
 
-#define DISALLOW_COPY_AND_MOVE(classname)                  \
+#define DISALLOW_COPY_AND_MOVE(classname)                \
   classname(const classname&)                  = delete; \
   auto operator=(const classname&)->classname& = delete; \
   classname(classname&&)                       = delete; \
   auto operator=(classname&&)->classname&      = delete
+
+#define ENABLE_INFO(module)                                               \
+  template <typename... Args>                                             \
+  void log(fmt::format_string<Args...> message, Args&&... args) {         \
+    Logger::getLogger(module).info(message, std::forward<Args>(args)...); \
+  }
+
+#define ENABLE_ERROR(module)                                               \
+  template <typename... Args>                                              \
+  void error(fmt::format_string<Args...> message, Args&&... args) {        \
+    Logger::getLogger(module).error(message, std::forward<Args>(args)...); \
+  }
+
+#define ENABLE_STATIC_INFO(module)                                        \
+  template <typename... Args>                                             \
+  static void log(fmt::format_string<Args...> message, Args&&... args) {  \
+    Logger::getLogger(module).info(message, std::forward<Args>(args)...); \
+  }
+
+#define ENABLE_STATIC_ERROR(module)                                        \
+  template <typename... Args>                                              \
+  static void error(fmt::format_string<Args...> message, Args&&... args) { \
+    Logger::getLogger(module).error(message, std::forward<Args>(args)...); \
+  }
+
+#define DEFINE_GETTER_AND_SETTER(type, name, member) \
+  void set##name(const type& value) {                \
+    member = value;                                  \
+  }                                                  \
+  [[nodiscard]] auto get##name() const->type {       \
+    return member;                                   \
+  }
 
 #endif // COMMON_MACRO_H
