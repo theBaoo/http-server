@@ -25,6 +25,7 @@ include(FetchContent)
 # # 主要是一个 header-only 库, 并没有 CMake 自带的安装规则
 # # 所以需要手动 include_directories
 # include_directories(${asio_SOURCE_DIR}/asio/include)
+find_package(OpenSSL REQUIRED)
 
 # 引入 Boost（包含 Asio）
 FetchContent_Declare(
@@ -37,7 +38,7 @@ FetchContent_Declare(
 set(BOOST_INCLUDE_LIBRARIES asio system) # 限制为 asio 和 system
 FetchContent_MakeAvailable(boost)
 
-# 引入 OpenSSL
+# 不引入 OpenSSL, 本地和云都安装了openssl
 # FetchContent_Declare(
 #     openssl
 #     GIT_REPOSITORY https://github.com/openssl/openssl.git
@@ -45,6 +46,7 @@ FetchContent_MakeAvailable(boost)
 #     GIT_SHALLOW TRUE
 # )
 # FetchContent_MakeAvailable(openssl)
+# 使用本地的openssl
 
 FetchContent_Declare(
   googletest
