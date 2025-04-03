@@ -21,7 +21,8 @@
 // // TODO(thebao): Reduce cognitive complexity of handleRequest function
 // void HTTPHandler::handleRequest() {
 //   boost::asio::async_read_until(*socket_, buffer_, END_OF_REQUEST,
-//                                 [this](const boost::system::error_code& ecd, std::size_t length) {
+//                                 [this](const boost::system::error_code& ecd, std::size_t length)
+//                                 {
 //                                   handleOneRequest(ecd, length);
 //                                 });
 // }

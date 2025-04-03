@@ -7,8 +7,8 @@
 const size_t MAX_BUFFER_SIZE = 1024;
 const size_t MAX_CONNECTIONS = 10;
 
-const std::string ADDR = "0.0.0.0";
-const std::string PORT = "80";
+const std::string ADDR     = "0.0.0.0";
+const std::string PORT     = "80";
 const std::string SSL_PORT = "4433";
 
 // 或在CMake中传递

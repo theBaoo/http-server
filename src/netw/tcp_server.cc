@@ -10,15 +10,18 @@
 #include "logging/logger.hh"
 #include "protocol/http_handler.hh"
 
-TCPServer::TCPServer(boost::asio::io_context& ctx, const std::string& address, const std::string& port, bool ssl_enabled)
-    : io_context_(ctx), acceptor_(io_context_, boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), std::stoi(port))) {
+TCPServer::TCPServer(boost::asio::io_context& ctx, const std::string& address,
+                     const std::string& port, bool ssl_enabled)
+    : io_context_(ctx),
+      acceptor_(io_context_, boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address),
+                                                            std::stoi(port))) {
   if (ssl_enabled) {
     ssl_enabled_ = true;
     ssl_context_.emplace(boost::asio::ssl::context::tlsv12_server);
     // 使用缓冲区读取出错, 故直接读取文件
     try {
-    ssl_context_->use_certificate_file(cert, boost::asio::ssl::context::pem);
-    ssl_context_->use_private_key_file(key, boost::asio::ssl::context::pem);
+      ssl_context_->use_certificate_file(cert, boost::asio::ssl::context::pem);
+      ssl_context_->use_private_key_file(key, boost::asio::ssl::context::pem);
     } catch (const std::exception& e) {
       log("SSL error: {}", e.what());
       throw;
@@ -28,8 +31,6 @@ TCPServer::TCPServer(boost::asio::io_context& ctx, const std::string& address, c
     log("TCP Server for HTTP is created");
   }
 }
-
-
 
 void TCPServer::start() {
   do_accept();
@@ -74,7 +75,8 @@ void TCPServer::do_accept() {
       if (!ssl_enabled_) {
         handler = make_handler(socket);
       } else {
-        auto ssl_socket = std::make_shared<boost::asio::ssl::stream<tcp::socket>>(std::move(*socket), *ssl_context_);
+        auto ssl_socket = std::make_shared<boost::asio::ssl::stream<tcp::socket>>(
+            std::move(*socket), *ssl_context_);
         handler = make_handler(ssl_socket);
       }
       handlers_.push_back(handler);

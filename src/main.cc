@@ -12,8 +12,8 @@ auto main() -> int {
   // boost::asio::io_context http_ctx;
   // boost::asio::io_context https_ctx;
   boost::asio::io_context ctx;
-  TCPServer http_server(ctx, ADDR, PORT);
-  TCPServer https_server(ctx, ADDR, SSL_PORT, true);
+  TCPServer               http_server(ctx, ADDR, PORT);
+  TCPServer               https_server(ctx, ADDR, SSL_PORT, true);
   // server.start();
   http_server.startWithMultipleThreads(4);
   https_server.startWithMultipleThreads(4);

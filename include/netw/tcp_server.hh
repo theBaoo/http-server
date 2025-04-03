@@ -7,11 +7,11 @@
 #include <string>
 
 #include "boost/asio/ssl/context.hpp"
+#include "common/constants.hh"
+#include "common/macro.hh"
 #include "fmt/core.h"
 #include "logging/logger.hh"
 #include "protocol/http_handler.hh"
-#include "common/constants.hh"
-#include "common/macro.hh"
 
 class TCPServer {
  public:
@@ -29,12 +29,14 @@ class TCPServer {
 
   template <typename... Args>
   void log(fmt::format_string<Args...> message, Args&&... args) {
-    Logger::getLogger(ssl_enabled_ ? "tcp server(443)" : "tcp server(80)").info(message, std::forward<Args>(args)...);
+    Logger::getLogger(ssl_enabled_ ? "tcp server(443)" : "tcp server(80)")
+        .info(message, std::forward<Args>(args)...);
   }
 
   template <typename... Args>
   void error(fmt::format_string<Args...> message, Args&&... args) {
-    Logger::getLogger(ssl_enabled_ ? "tcp server(443)" : "tcp server(80)").error(message, std::forward<Args>(args)...);
+    Logger::getLogger(ssl_enabled_ ? "tcp server(443)" : "tcp server(80)")
+        .error(message, std::forward<Args>(args)...);
   }
 
  private:
@@ -44,11 +46,11 @@ class TCPServer {
   // size_t max_connections_{MAX_CONNECTIONS};
 
   bool ssl_enabled_{false};
-  
-  boost::asio::io_context&                      io_context_;
+
+  boost::asio::io_context& io_context_;
   // 避免clangd要求提供初始化(因为该对象没有默认构造函数)
-  std::optional<boost::asio::ssl::context>      ssl_context_;
-  boost::asio::ip::tcp::acceptor                acceptor_;
+  std::optional<boost::asio::ssl::context> ssl_context_;
+  boost::asio::ip::tcp::acceptor           acceptor_;
 
   // 防止io_context_退出
   std::shared_ptr<boost::asio::io_context::work> work{
@@ -56,7 +58,7 @@ class TCPServer {
 
   std::vector<std::shared_ptr<HandlerBase>> handlers_;
   // 对于公用io_context的情况, workers可以由main管理
-  std::vector<std::thread>                   workers_;
+  std::vector<std::thread> workers_;
 };
 
 #endif // TCP_SERVER_H

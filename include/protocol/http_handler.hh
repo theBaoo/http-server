@@ -2,8 +2,8 @@
 #define PROTOCOL_HTTP_HANDLER_H
 
 #include <boost/asio.hpp>
-#include <boost/asio/streambuf.hpp>
 #include <boost/asio/ssl.hpp>
+#include <boost/asio/streambuf.hpp>
 #include <memory>
 #include <string>
 
@@ -12,8 +12,8 @@
 #include "application/route.hh"
 #include "common/macro.hh"
 #include "logging/logger.hh"
-#include "protocol/response.hh"
 #include "protocol/parser.hh"
+#include "protocol/response.hh"
 
 const std::string END_OF_REQUEST = "\r\n\r\n";
 
@@ -23,24 +23,26 @@ class HandlerBase {
  public:
   HandlerBase() = default;
   DISALLOW_COPY_AND_MOVE(HandlerBase);
-  virtual ~HandlerBase() = default;
+  virtual ~HandlerBase()          = default;
   virtual auto initiate() -> void = 0;
   virtual auto isClosed() -> bool = 0;
 };
 
 // TODO(thebao): Implement dependency injection for file service
-template<typename Socket>
+template <typename Socket>
 class HTTPHandler : public std::enable_shared_from_this<HTTPHandler<Socket>>, public HandlerBase {
  public:
   explicit HTTPHandler(std::shared_ptr<Socket> socket)
-      : socket_(std::move(socket)), router_(ServiceFactory::createRouter()) {
-    // 日志逻辑放在这里并不合适
-    // 因为需要原始的socket, 而ssl连接的socket并未进入handler
-    // 而构造函数又无法简单地模版偏特化
-    // 所以将该日志逻辑移动至上一层, TCP Server
-    // log("HTTPHandler is created from {}, {}", socket_->remote_endpoint().address().to_string(),
-    //     socket_->remote_endpoint().port());
-  };
+      : socket_(std::move(socket)),
+        router_(ServiceFactory::createRouter()){
+            // 日志逻辑放在这里并不合适
+            // 因为需要原始的socket, 而ssl连接的socket并未进入handler
+            // 而构造函数又无法简单地模版偏特化
+            // 所以将该日志逻辑移动至上一层, TCP Server
+            // log("HTTPHandler is created from {}, {}",
+            // socket_->remote_endpoint().address().to_string(),
+            //     socket_->remote_endpoint().port());
+        };
 
   // 一个低级错误: 双重释放了socket
   // 连接关闭后调用一次close
@@ -61,7 +63,7 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler<Socket>>, pu
   void handleRequest();
 
   // 传入socket是为了模版特化, 这样可以自动选择对应的close
-  template<typename S>
+  template <typename S>
   auto close(S socket) -> void {
     log("default close");
     socket->close();
@@ -69,12 +71,14 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler<Socket>>, pu
     log("Socket closed.");
   }
 
-  auto close(std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket) -> void { // NOLINT
+  auto close(std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket)
+      -> void { // NOLINT
     socket->async_shutdown([this](const boost::system::error_code& ecd) {
       if (!ecd) {
         log("SSL connection shutdown.");
       } else {
-        error("SSL connection close error: {} from {} {}", ecd.message(), socket_->lowest_layer().remote_endpoint().address().to_string(),
+        error("SSL connection close error: {} from {} {}", ecd.message(),
+              socket_->lowest_layer().remote_endpoint().address().to_string(),
               socket_->lowest_layer().remote_endpoint().port());
       }
       // 安全起见, 直接关闭socket
@@ -92,11 +96,11 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler<Socket>>, pu
 
  private:
   std::shared_ptr<Socket> socket_;
-  boost::asio::streambuf                        buffer_;
-  Router                                        router_;
-  RequestContext                                request_ctx_;
-  ResponseContext                               response_ctx_;
-  bool isclosed_{false};
+  boost::asio::streambuf  buffer_;
+  Router                  router_;
+  RequestContext          request_ctx_;
+  ResponseContext         response_ctx_;
+  bool                    isclosed_{false};
 
   template <typename... Args>
   void log(fmt::format_string<Args...> message, Args&&... args) {
@@ -109,11 +113,11 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler<Socket>>, pu
   }
 
   template <typename S>
-  void do_initiate([[maybe_unused]]S& socket) {
+  void do_initiate([[maybe_unused]] S& socket) {
     handleRequest();
   }
 
-   // HTTPS 初始化（执行握手）
+  // HTTPS 初始化（执行握手）
   void do_initiate(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>& socket) {
     log("HTTPS connection establishing.");
     socket.async_handshake(boost::asio::ssl::stream_base::server,
@@ -152,7 +156,7 @@ auto make_handler(std::shared_ptr<Socket> socket) -> std::shared_ptr<HandlerBase
 }
 
 // TODO(thebao): Reduce cognitive complexity of handleRequest function
-template<typename Socket>
+template <typename Socket>
 void HTTPHandler<Socket>::handleRequest() {
   boost::asio::async_read_until(*socket_, buffer_, END_OF_REQUEST,
                                 [this](const boost::system::error_code& ecd, std::size_t length) {
@@ -161,7 +165,8 @@ void HTTPHandler<Socket>::handleRequest() {
 }
 
 template <typename Socket>
-void HTTPHandler<Socket>::handleOneRequest(const boost::system::error_code& ecd, std::size_t length) {
+void HTTPHandler<Socket>::handleOneRequest(const boost::system::error_code& ecd,
+                                           std::size_t                      length) {
   using boost::asio::error::connection_reset;
   using boost::asio::error::eof;
   using boost::system::error_code;
