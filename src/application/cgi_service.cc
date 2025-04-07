@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 #include <sstream>
+#include <sys/wait.h>
 #include "application/context.hh"
 #include "common/constants.hh"
 #include "common/enum.hh"
