@@ -7,6 +7,7 @@
 #include "tcp_server.hh"
 
 auto main() -> int {
+  try {
   Logger::getLogger("HTTP Server").info("HTTP(S) Server is running on http://localhost:8080(443)");
 
   // boost::asio::io_context http_ctx;
@@ -22,5 +23,12 @@ auto main() -> int {
   https_server.join();
 
   Logger::getLogger().shutdown();
+  } catch (const std::exception& e) {
+    fmt::print(stderr, "Error: {}\n", e.what());
+    return 1;
+  } catch (...) {
+    fmt::print(stderr, "Unknown error occurred.\n");
+    return 1;
+  }
   return 0;
 }

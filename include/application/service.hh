@@ -10,6 +10,9 @@
 #include "common/macro.hh"
 #include "logging/logger.hh"
 
+// Servce负责处理处理业务逻辑
+// 但也应该负责针对Request Header来填写对应的Response Header
+// 因为我不想在Parser-Service-Response之间再增加一个环节填写Header
 class Service {
  public:
   Service()          = default;

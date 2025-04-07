@@ -1,19 +1,27 @@
 #ifndef PROTOCOL_HTTP_HANDLER_H
 #define PROTOCOL_HTTP_HANDLER_H
 
+#include <sys/_types/_size_t.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/streambuf.hpp>
+#include <functional>
 #include <memory>
 #include <string>
 
 #include "application/context.hh"
 #include "application/file_service.hh"
 #include "application/route.hh"
+#include "boost/asio/buffers_iterator.hpp"
+#include "boost/asio/completion_condition.hpp"
+#include "boost/asio/error.hpp"
+#include "boost/asio/read.hpp"
+#include "boost/system/detail/error_code.hpp"
 #include "common/macro.hh"
 #include "logging/logger.hh"
 #include "protocol/parser.hh"
 #include "protocol/response.hh"
+#include "protocol/uri_decoder.hh"
 
 const std::string END_OF_REQUEST = "\r\n\r\n";
 
@@ -71,8 +79,8 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler<Socket>>, pu
     log("Socket closed.");
   }
 
-  auto close(std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket)
-      -> void { // NOLINT
+  auto close(std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket) // NOLINT
+      -> void {
     socket->async_shutdown([this](const boost::system::error_code& ecd) {
       if (!ecd) {
         log("SSL connection shutdown.");
@@ -148,6 +156,14 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler<Socket>>, pu
   void processBodyComplete();
 
   void sendResponse(const std::string& response, bool keep_alive);
+
+  void checkErrorCode(const boost::system::error_code& ecd) {
+    if (ecd == boost::asio::error::eof || ecd == boost::asio::error::connection_reset) {
+      close(socket_);
+    } else {
+      error("Async I/O error: {}", ecd.message());
+    }
+  }
 };
 
 template <typename Socket>
@@ -205,6 +221,7 @@ auto HTTPHandler<Socket>::getBody() -> void {
   auto transfer_encoding = request_ctx_.getHeader("Transfer-Encoding");
 
   if (content_length.empty() && transfer_encoding == "chunked") {
+    log("Chunked transfer encoding detected.");
     getBodyWithChunked();
   } else if (!content_length.empty()) {
     std::size_t length = std::stoul(content_length);
@@ -261,9 +278,102 @@ auto HTTPHandler<Socket>::getBodyWithLength(std::size_t length) -> void {
   async_read(*socket_, buffer_, transfer_at_least(1), handler);
 }
 
+// async_read_until: 按分隔符读取
+// async_read: 按数据本身读取, 如(至少)读取一定量的数据; 且在回调中需额外截取数据
 template <typename Socket>
 auto HTTPHandler<Socket>::getBodyWithChunked() -> void {
-  // TODO(thebao): 处理chunked transfer encoding
+  using boost::asio::async_read;
+  using boost::asio::buffer;
+  using boost::asio::buffers_begin;
+  using boost::asio::buffers_end;
+  using boost::asio::transfer_at_least;
+  using boost::asio::transfer_exactly;
+  using boost::system::error_code;
+  // TODO(thebao): 处理chunked transfer encoding 
+  std::function<void(const error_code&, size_t)> read_length;
+  std::function<void(const error_code&, size_t)> finish_chunk;
+  auto read_block = [this, read_length](const error_code& ecd, size_t length) {
+    if (!ecd) {
+      auto begin = buffers_begin(buffer_.data());      
+      auto end   = begin + static_cast<std::ptrdiff_t>(length); 
+      std::string data(begin, end);
+      buffer_.consume(length + 2);
+      request_ctx_.addBody(data);
+
+      log("Received chunked body: {}", data);
+
+      // 继续读取下一个块
+      async_read_until(*socket_, buffer_, CRLF, read_length);
+    } else {
+      checkErrorCode(ecd);
+    }
+  };
+
+  read_length = [this, read_block, finish_chunk](const error_code& ecd, [[maybe_unused]]size_t length) {
+    if (!ecd) {
+      auto        begin = buffers_begin(buffer_.data());
+      auto        end   = buffers_end(buffer_.data());
+      std::string data(begin, end);
+      log("length data: {}", data);
+      // 检查是否有ext
+      size_t body_size {};
+      auto pos = data.find(';');
+      if (pos != std::string::npos) {
+        // TODO(thebao): 处理ext
+      }
+
+      pos = data.find(CRLF);
+      if (pos == std::string::npos) {
+        error("Read chunked body: expected CRLF");
+        close(socket_);
+      }
+
+      body_size = std::stoul(data.substr(0, pos), nullptr, HEX);
+      buffer_.consume(pos + 2); // 消耗掉CRLF
+      log("Chunked body size: {}", body_size);
+
+      // 传输结束
+      if (body_size == 0) {
+        // Is it safe to directlt consume the second \r\n?
+        async_read_until(*socket_, buffer_, CRLF, finish_chunk);
+        return;
+      }
+
+      if (buffer_.size() >= body_size) {
+        auto begin = buffers_begin(buffer_.data());
+        auto end   = begin + static_cast<std::ptrdiff_t>(body_size);
+        std::string data(begin, end);
+        buffer_.consume(body_size);
+        request_ctx_.addBody(data);
+        processBodyComplete();
+        return;
+      }
+        
+      async_read(*socket_, buffer_, 
+        transfer_exactly(body_size)
+        // transfer_at_least(1)
+        , read_block);
+    } else {
+      checkErrorCode(ecd);
+    }
+  };
+
+  finish_chunk = [this](const error_code& ecd, [[maybe_unused]]size_t length) {
+    if (!ecd) {
+      auto begin = buffers_begin(buffer_.data());
+      if (begin[0] == '\r' && begin[1] == '\n') {
+        buffer_.consume(2);
+        processBodyComplete();
+      } else {
+        error("Expected CRLF after last chunk");
+        close(socket_);
+      }
+    } else {
+      checkErrorCode(ecd);
+    }
+  };
+
+  async_read_until(*socket_, buffer_, CRLF, read_length);
 }
 
 // TODO(thebao): 处理异步post请求体

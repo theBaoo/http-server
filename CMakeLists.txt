@@ -26,6 +26,7 @@ include(FetchContent)
 # # 所以需要手动 include_directories
 # include_directories(${asio_SOURCE_DIR}/asio/include)
 find_package(OpenSSL REQUIRED)
+find_package(ZLIB REQUIRED)
 
 # 引入 Boost（包含 Asio）
 FetchContent_Declare(
