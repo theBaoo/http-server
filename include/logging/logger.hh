@@ -47,7 +47,8 @@ class ConsoleSink : public LogSink {
     if (pos == std::string::npos) {
       fmt::println("{}", message);
     } else {
-      fmt::println("{}", message + " (Check the log file for more details)");
+      // 之前忘记调用.substr了, 草了, 难怪每次都那么多行
+      fmt::println("{}", message.substr(0, pos) + " (Check the log file for more details)");
     }
   }
 
@@ -83,6 +84,7 @@ class FileSink : public LogSink {
   std::ofstream file_;
 };
 
+// TODO(thebao): stderr输出
 class Logger {
  public:
   static auto getLogger(const std::string& name = "") -> Logger&;

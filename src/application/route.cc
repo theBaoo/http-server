@@ -7,7 +7,8 @@ auto Router::forward(RequestContext ctx) -> ResponseContext {
     ctx.setBody(Compressor::decompress(ctx.getBody()));
   }
   log("body: {}", ctx.getBody());
-  auto result = (*services_[ctx.getUri()])(ctx);
+  // auto result = (*services_[ctx.getUri()])(ctx);
+  auto result = (*getService(ctx.getUri()))(ctx);
 
   // 填写响应头
   if (ctx.getHeader("Accept-Encoding") == "gzip") {

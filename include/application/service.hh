@@ -26,6 +26,11 @@ class Service {
   }
 
   virtual auto handle(RequestContext&) -> ResponseContext = 0;
+ protected:
+  // 直接使用private的话, 子类无法调用
+  // 这是很常见的场景: 只希望派生类调用而不是外部类
+  // 可以使用protected, 但其实这样的接口可以被抽出来复用, 使用组合来代替继承
+  static auto innerError(ResponseContext& response, const std::string& msg) -> ResponseContext;
 };
 
 class UnimplementedService : public Service {
