@@ -1,4 +1,5 @@
 #include "application/route.hh"
+
 #include "protocol/compress.hh"
 
 auto Router::forward(RequestContext ctx) -> ResponseContext {

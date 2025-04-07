@@ -1,10 +1,10 @@
 #ifndef PROTOCOL_HTTP_HANDLER_H
 #define PROTOCOL_HTTP_HANDLER_H
 
-#include <sys/_types/_size_t.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/streambuf.hpp>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <string>
@@ -79,7 +79,8 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler<Socket>>, pu
     log("Socket closed.");
   }
 
-  auto close(std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket) // NOLINT
+  auto close(
+      std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket) // NOLINT
       -> void {
     socket->async_shutdown([this](const boost::system::error_code& ecd) {
       if (!ecd) {
@@ -289,13 +290,13 @@ auto HTTPHandler<Socket>::getBodyWithChunked() -> void {
   using boost::asio::transfer_at_least;
   using boost::asio::transfer_exactly;
   using boost::system::error_code;
-  // TODO(thebao): 处理chunked transfer encoding 
+  // TODO(thebao): 处理chunked transfer encoding
   std::function<void(const error_code&, size_t)> read_length;
   std::function<void(const error_code&, size_t)> finish_chunk;
   auto read_block = [this, read_length](const error_code& ecd, size_t length) {
     if (!ecd) {
-      auto begin = buffers_begin(buffer_.data());      
-      auto end   = begin + static_cast<std::ptrdiff_t>(length); 
+      auto        begin = buffers_begin(buffer_.data());
+      auto        end   = begin + static_cast<std::ptrdiff_t>(length);
       std::string data(begin, end);
       buffer_.consume(length + 2);
       request_ctx_.addBody(data);
@@ -309,15 +310,16 @@ auto HTTPHandler<Socket>::getBodyWithChunked() -> void {
     }
   };
 
-  read_length = [this, read_block, finish_chunk](const error_code& ecd, [[maybe_unused]]size_t length) {
+  read_length = [this, read_block, finish_chunk](const error_code&       ecd,
+                                                 [[maybe_unused]] size_t length) {
     if (!ecd) {
       auto        begin = buffers_begin(buffer_.data());
       auto        end   = buffers_end(buffer_.data());
       std::string data(begin, end);
       log("length data: {}", data);
       // 检查是否有ext
-      size_t body_size {};
-      auto pos = data.find(';');
+      size_t body_size{};
+      auto   pos = data.find(';');
       if (pos != std::string::npos) {
         // TODO(thebao): 处理ext
       }
@@ -340,25 +342,26 @@ auto HTTPHandler<Socket>::getBodyWithChunked() -> void {
       }
 
       if (buffer_.size() >= body_size) {
-        auto begin = buffers_begin(buffer_.data());
-        auto end   = begin + static_cast<std::ptrdiff_t>(body_size);
+        auto        begin = buffers_begin(buffer_.data());
+        auto        end   = begin + static_cast<std::ptrdiff_t>(body_size);
         std::string data(begin, end);
         buffer_.consume(body_size);
         request_ctx_.addBody(data);
         processBodyComplete();
         return;
       }
-        
-      async_read(*socket_, buffer_, 
-        transfer_exactly(body_size)
-        // transfer_at_least(1)
-        , read_block);
+
+      async_read(*socket_, buffer_,
+                 transfer_exactly(body_size)
+                 // transfer_at_least(1)
+                 ,
+                 read_block);
     } else {
       checkErrorCode(ecd);
     }
   };
 
-  finish_chunk = [this](const error_code& ecd, [[maybe_unused]]size_t length) {
+  finish_chunk = [this](const error_code& ecd, [[maybe_unused]] size_t length) {
     if (!ecd) {
       auto begin = buffers_begin(buffer_.data());
       if (begin[0] == '\r' && begin[1] == '\n') {

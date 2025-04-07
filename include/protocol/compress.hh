@@ -2,10 +2,12 @@
 #define PROTOCOL_COMPRESS_HH
 
 #include <zlib.h>
+
 #include <string>
+
 #include "common/macro.hh"
-#include "logging/logger.hh"
 #include "fmt/core.h"
+#include "logging/logger.hh"
 
 class Compressor {
  public:
