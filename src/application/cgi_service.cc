@@ -1,8 +1,10 @@
 #include "application/cgi_service.hh"
 
-#include <unistd.h>
-#include <sstream>
 #include <sys/wait.h>
+#include <unistd.h>
+
+#include <sstream>
+
 #include "application/context.hh"
 #include "common/constants.hh"
 #include "common/enum.hh"
@@ -13,7 +15,7 @@ auto CgiService::handle(RequestContext& ctx) -> ResponseContext {
   int pipefd[2];
   if (pipe(pipefd) == -1) {
     error("pipe failed");
-    return innerError(response, "Pipe failed"); 
+    return innerError(response, "Pipe failed");
   }
 
   int pid = fork();
@@ -30,7 +32,7 @@ auto CgiService::handle(RequestContext& ctx) -> ResponseContext {
     }
     close(pipefd[0]); // Close the read end of the pipe in the child process
     if (dup2(pipefd[1], STDOUT_FILENO) == -1) {
-      return innerError(response, "Failed to redirect stdout"); 
+      return innerError(response, "Failed to redirect stdout");
     }
     close(pipefd[1]); // Close the original write end of the pipe
     std::string cgiPath = root + ctx.getUri();
@@ -45,8 +47,8 @@ auto CgiService::handle(RequestContext& ctx) -> ResponseContext {
   } else {
     close(pipefd[1]); // Close the write end of the pipe in the parent process
     std::ostringstream oss;
-    char buffer[4096];
-    ssize_t bytesRead {};
+    char               buffer[4096];
+    ssize_t            bytesRead{};
     while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer) - 1)) > 0) {
       oss.write(buffer, bytesRead);
     }

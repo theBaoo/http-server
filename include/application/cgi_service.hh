@@ -7,7 +7,7 @@
 
 class CgiService : public Service {
  public:
-  CgiService() = default;
+  CgiService()           = default;
   ~CgiService() override = default;
 
   DISALLOW_COPY_AND_MOVE(CgiService);
