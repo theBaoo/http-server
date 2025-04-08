@@ -55,16 +55,37 @@
 <body>
     <div class="login-container">
         <h1>登录</h1>
-        <form action="/login" method="POST">
+        <form id="login-form" action="/login" method="POST">
             <label for="username">账号</label>
             <input type="text" id="username" name="username" required>
             <label for="password">密码</label>
             <input type="password" id="password" name="password" required>
             <button type="submit">登录</button>
         </form>
+        <p id="error-message" style="color: red; text-align: center; display: none;">登录失败，请检查账号和密码。</p>
     </div>
     <script>
-        // 移除JavaScript的fetch逻辑，使用表单默认提交行为
+        const form = document.getElementById('login-form');
+        const errorMessage = document.getElementById('error-message');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault(); // 阻止默认表单提交行为
+
+            const formData = new FormData(form);
+            const response = await fetch(form.action, {
+                method: form.method,
+                body: formData,
+            });
+
+            if (response.status === 401) {
+                errorMessage.style.display = 'block';
+            } else if (response.ok) {
+                window.location.href = '/dashboard'; // 假设登录成功后跳转到仪表盘页面
+            } else {
+                errorMessage.textContent = '发生未知错误，请稍后再试。';
+                errorMessage.style.display = 'block';
+            }
+        });
     </script>
 </body>
 </html>

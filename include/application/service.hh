@@ -65,12 +65,7 @@ class DefaultService : public Service {
     ResponseContext result;
     Logger::getLogger("default service").info("Default service is called");
 
-    std::string path = request.getUri();
-    if (path == "/") {
-      path = "/index.html";
-    } else if (path == "/dashboard") {
-      path = "/dashboard.html";
-    }
+    std::string path    = request.getUri();
     std::string content = FileService::getInstance().getFileContent(path);
 
     result.setStatusCode(StatusCode::OK);

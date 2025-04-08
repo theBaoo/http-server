@@ -85,6 +85,7 @@ class ServiceFactory {
       router.registerService("/favicon.ico", &ImgService::getInstance());
       router.registerService("/login", &LoginService::getInstance());
       router.registerService("/dashboard", &DefaultService::getInstance());
+      router.registerService("/cache-test", &DefaultService::getInstance());
 
       router.registerPreService("/cgi-bin/", &CgiService::getInstance());
     }

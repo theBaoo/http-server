@@ -89,6 +89,7 @@ auto Parser::parseHeader(std::string& header) -> std::tuple<std::string, std::st
   return std::make_tuple(field, value);
 }
 
+// Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryScw68jLC9ICGsBiH
 auto Parser::parseBody(std::string& body, ContentType type)
     -> std::unordered_map<std::string, std::string> {
   auto parser = [type](std::string& body) -> std::pair<std::string, std::string> {
