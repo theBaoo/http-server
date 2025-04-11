@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        .login-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        .login-container h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .login-container label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        .login-container input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .login-container button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>登录</h1>
+        <form id="login-form" action="/login" method="POST">
+            <label for="username">账号</label>
+            <input type="text" id="username" name="username" required>
+            <label for="password">密码</label>
+            <input type="password" id="password" name="password" required>
+            <button type="submit">登录</button>
+        </form>
+        <p id="error-message" style="color: red; text-align: center; display: none;">登录失败，请检查账号和密码。</p>
+    </div>
+    <script>
+        const form = document.getElementById('login-form');
+        const errorMessage = document.getElementById('error-message');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault(); // 阻止默认表单提交行为
+
+            const formData = new FormData(form);
+            const response = await fetch(form.action, {
+                method: form.method,
+                body: formData,
+            });
+
+            if (response.status === 401) {
+                errorMessage.style.display = 'block';
+            } else if (response.ok) {
+                window.location.href = '/dashboard'; // 假设登录成功后跳转到仪表盘页面
+            } else {
+                errorMessage.textContent = '发生未知错误，请稍后再试。';
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

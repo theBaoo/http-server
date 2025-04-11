@@ -1,8 +1,8 @@
 #ifndef APPLICATION_CONTEXT_HH
 #define APPLICATION_CONTEXT_HH
 
-#include <string>
 #include <optional>
+#include <string>
 #include <unordered_map>
 
 #include "common/enum.hh"

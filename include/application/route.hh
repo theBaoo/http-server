@@ -7,31 +7,48 @@
 #include <string>
 #include <unordered_map>
 
+#include "application/cgi_service.hh"
 #include "application/file_service.hh"
 #include "application/img_service.hh"
+#include "application/login_service.hh"
 #include "application/service.hh"
+#include "buffer/session.hh"
 #include "common/macro.hh"
 
 class Service;
 
+// TODO(thebao): 路由树, 分段匹配路径
 class Router {
-  using RouterTable = std::unordered_map<std::string, Service*>;
+  using RouterTable   = std::unordered_map<std::string, Service*>;
+  using PreRouteTable = std::unordered_map<std::string, Service*>;
 
  public:
-  auto forward(RequestContext ctx) -> ResponseContext;
+  auto forward(RequestContext& ctx) -> ResponseContext;
 
   auto registerService(const std::string& uri, Service* service) -> void {
     services_[uri] = service;
   }
 
+  auto registerPreService(const std::string& uri, Service* service) -> void {
+    preServices_[uri] = service;
+  }
+
   // 默认构造的Service调用handle会导致address boundry error
   auto getService(const std::string& uri) -> Service* {
-    if (services_.find(uri) == services_.end()) {
-      // throw std::runtime_error("Service not found");
-      static UnimplementedService unimplementedService;
-      return &unimplementedService;
+    auto itr = services_.find(uri);
+    if (itr != services_.end()) {
+      return itr->second;
     }
-    return services_[uri];
+
+    for (const auto& [pre, service] : preServices_) {
+      log("pre: {}, uri: {}", pre, uri);
+      if (uri.rfind(pre, 0) == 0) {
+        return service;
+      }
+    }
+
+    static UnimplementedService unimplementedService;
+    return &unimplementedService;
   }
 
   auto operator[](const std::string& uri) -> Service* {
@@ -47,7 +64,10 @@ class Router {
   // 使用raw pointer出于两种考虑, 更灵活
   // 1. Service可以为空
   // 2. 可以动态更换Service, 而引用不行
-  RouterTable services_;
+  RouterTable   services_;
+  PreRouteTable preServices_;
+
+  SessionManager* session_manager_ = &SessionManager::getInstance();
 };
 
 // 1. Route做单例是否可行
@@ -63,6 +83,11 @@ class ServiceFactory {
       router.registerService("/", &DefaultService::getInstance());
       router.registerService("/index.html", &DefaultService::getInstance());
       router.registerService("/favicon.ico", &ImgService::getInstance());
+      router.registerService("/login", &LoginService::getInstance());
+      router.registerService("/dashboard", &DefaultService::getInstance());
+      router.registerService("/cache-test", &DefaultService::getInstance());
+
+      router.registerPreService("/cgi-bin/", &CgiService::getInstance());
     }
     return router;
   }
