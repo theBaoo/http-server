@@ -19,8 +19,9 @@ const std::string root = "/Users/thebao/codes/cpp/http-server";
 const std::string root = "/root/net-xjtu/http-server";
 #endif
 
-const std::string stt  = root + "/static";
-const std::string cert = root + "/certificate/cert.pem";
-const std::string key  = root + "/certificate/key.pem";
+const std::string stt    = root + "/static";
+const std::string cert   = root + "/certificate/cert.pem";
+const std::string key    = root + "/certificate/key.pem";
+const std::string cookie = root + "/data/cookie";
 
 #endif // COMMON_CONSTANTS_H

@@ -17,9 +17,11 @@ enum class ContentType {
   JSON,
   PLAIN,
   XML,
+  MULTIPART,
 };
 
 enum class StatusCode {
+  CONTINUED             = 100,
   OK                    = 200,
   FOUND                 = 302,
   NOT_MODIFIED          = 304,
