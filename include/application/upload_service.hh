@@ -18,8 +18,8 @@ class UploadService : public Service {
  private:
   std::string valid_path_ = "/upload";
 
-  ENABLE_INFO("UploadService");
-  ENABLE_ERROR("UploadService");
+  ENABLE_INFO("UploadService")
+  ENABLE_ERROR("UploadService")
 };
 
 struct FormInfo {

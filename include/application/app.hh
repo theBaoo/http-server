@@ -20,8 +20,8 @@ class App {
   ~App();
   DISALLOW_COPY_AND_MOVE(App);
 
-  ENABLE_INFO("App");
-  ENABLE_ERROR("App");
+  ENABLE_INFO("App")
+  ENABLE_ERROR("App")
 
   void start(int num_threads = 4);
   void stop();

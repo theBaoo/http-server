@@ -1,5 +1,7 @@
 #include "application/control_service.hh"
 
+#include <csignal>
+
 #include "application/context.hh"
 #include "application/upload_service.hh"
 #include "common/enum.hh"
