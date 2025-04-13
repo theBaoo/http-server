@@ -15,6 +15,8 @@ target_link_libraries(http_server_lib PUBLIC ${OPENSSL_LIBRARIES})
 target_link_libraries(http_server_lib PUBLIC fmt::fmt)
 target_link_libraries(http_server_lib PUBLIC Boost::system)
 target_link_libraries(http_server_lib PUBLIC Boost::asio)
+target_link_libraries(http_server_lib PUBLIC pthread)
+target_link_libraries(http_server_lib PUBLIC Boost::uuid)
 target_link_libraries(http_server_lib PUBLIC ZLIB::ZLIB)
 # target_compile_definitions(http_server_lib PRIVATE ASIO_STANDALONE)
 

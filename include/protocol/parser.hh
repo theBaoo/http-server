@@ -11,6 +11,15 @@
 #include "fmt/color.h"
 #include "logging/logger.hh"
 
+struct MultiPartInfo {
+  std::string name;
+  std::string filename;
+  std::string content_type;
+  std::string content_disposition;
+  std::string content_length;
+  std::string body;
+};
+
 // 解析 HTTP 请求行和头部字段
 class Parser {
  public:
@@ -26,6 +35,8 @@ class Parser {
 
   static auto parseBody(std::string& body, ContentType type)
       -> std::unordered_map<std::string, std::string>;
+
+  static auto parseMultipartBody(std::string& body) -> std::vector<MultiPartInfo>;
 
   static auto parseForm(std::string& body) -> pair;
   static auto parseJson(std::string& body) -> pair;

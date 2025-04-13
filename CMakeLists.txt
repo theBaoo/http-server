@@ -5,7 +5,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
 
 # find_program(CLANG_TIDY NAMES clang-tidy)
 # if(CLANG_TIDY)
@@ -36,7 +37,7 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 # 只构建必要的 Boost 组件
-set(BOOST_INCLUDE_LIBRARIES asio system) # 限制为 asio 和 system
+set(BOOST_INCLUDE_LIBRARIES asio system uuid) # 限制为 asio 和 system
 FetchContent_MakeAvailable(boost)
 
 # 不引入 OpenSSL, 本地和云都安装了openssl

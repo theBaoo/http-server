@@ -17,6 +17,13 @@ auto Service::redirect(ResponseContext &response, const std::string &location) -
   return response;
 }
 
+auto Service::unAuthorized(ResponseContext &response, const std::string &msg) -> ResponseContext {
+  response.setStatusCode(StatusCode::UNAUTHORIZED);
+  response.setStatusMessage("Unauthorized: " + msg);
+  response.setBody("Unauthorized: " + msg);
+  return response;
+}
+
 UnimplementedService::UnimplementedService() {
   ctx.setStatusCode(StatusCode::NOT_IMPLEMENTED);
   ctx.setStatusMessage("This service is not implemented yet.");

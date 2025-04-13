@@ -58,6 +58,8 @@ auto Parser::parseRequest(std::string& request)
   return std::make_tuple(method, path, version);
 }
 
+// 暂时不处理这样的可选扩展, 需要这些选项时再检查
+// Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryScw68jLC9ICGsBiH
 auto Parser::parseHeader(std::string& header) -> std::tuple<std::string, std::string> {
   std::string field;
   std::string value;

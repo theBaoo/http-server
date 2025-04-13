@@ -157,12 +157,92 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler<Socket>>, pu
   void processBodyComplete();
 
   void sendResponse(const std::string& response, bool keep_alive);
-
+  void sendContinue();
   void checkErrorCode(const boost::system::error_code& ecd) {
     if (ecd == boost::asio::error::eof || ecd == boost::asio::error::connection_reset) {
       close(socket_);
     } else {
       error("Async I/O error: {}", ecd.message());
+    }
+  }
+  void read_length(const boost::system::error_code& ecd, size_t length) {
+    (void)length;
+    if (!ecd) {
+      auto        begin = buffers_begin(buffer_.data());
+      auto        end   = buffers_end(buffer_.data());
+      std::string data(begin, end);
+      // 检查是否有ext
+      size_t body_size{};
+      auto   pos = data.find(';');
+      if (pos != std::string::npos) {
+        // TODO(thebao): 处理ext
+      }
+
+      pos = data.find(CRLF);
+      if (pos == std::string::npos) {
+        error("Read chunked body: expected CRLF");
+        close(socket_);
+      }
+
+      body_size = std::stoul(data.substr(0, pos), nullptr, HEX);
+      buffer_.consume(pos + 2); // 消耗掉CRLF
+      log("Chunked body size: {}", body_size);
+
+      // 传输结束
+      if (body_size == 0) {
+        // Is it safe to directlt consume the second \r\n?
+        async_read_until(*socket_, buffer_, CRLF,
+                         [this](const boost::system::error_code& ecd, size_t length) {
+                           finish_chunk(ecd, length);
+                         });
+        return;
+      }
+
+      async_read_until(
+          *socket_, buffer_, CRLF,
+          [this](const boost::system::error_code& ecd, size_t length) { read_block(ecd, length); });
+    } else {
+      checkErrorCode(ecd);
+    }
+  }
+  void read_block(const boost::system::error_code& ecd, size_t length) {
+    (void)length;
+    if (!ecd) {
+      auto        begin = buffers_begin(buffer_.data());
+      auto        end   = buffers_end(buffer_.data());
+      std::string data(begin, end);
+
+      auto pos = data.find(CRLF);
+      if (pos == std::string::npos) {
+        error("Read chunked body: expected CRLF");
+        close(socket_);
+      }
+      request_ctx_.addBody(data.substr(0, pos));
+      buffer_.consume(pos + 2); // 消耗掉CRLF
+
+      log("Received chunked body: {}", data);
+
+      // 继续读取下一个块
+      async_read_until(*socket_, buffer_, CRLF,
+                       [this](const boost::system::error_code& ecd, size_t length) {
+                         read_length(ecd, length);
+                       });
+    } else {
+      checkErrorCode(ecd);
+    }
+  }
+  void finish_chunk(const boost::system::error_code& ecd, [[maybe_unused]] size_t length) {
+    if (!ecd) {
+      auto begin = buffers_begin(buffer_.data());
+      if (begin[0] == '\r' && begin[1] == '\n') {
+        buffer_.consume(2);
+        processBodyComplete();
+      } else {
+        error("Expected CRLF after last chunk");
+        close(socket_);
+      }
+    } else {
+      checkErrorCode(ecd);
     }
   }
 };
@@ -238,21 +318,30 @@ auto HTTPHandler<Socket>::getBodyWithLength(std::size_t length) -> void {
   using boost::asio::async_read;
   using boost::asio::buffer;
   using boost::asio::buffers_begin;
+  using boost::asio::buffers_end;
   using boost::asio::transfer_at_least;
   using boost::system::error_code;
+  buffer_.prepare(length * 2);
 
-  std::function<void(const error_code& ecd, size_t length)> handler =
+  std::function<void(const error_code&, size_t)> handler =
       [this, length, &handler](const error_code& ecd, std::size_t bytes_transferred) mutable {
         if (!ecd) {
-          std::string data(
-              buffers_begin(buffer_.data()),
-              buffers_begin(buffer_.data()) + static_cast<std::ptrdiff_t>(bytes_transferred));
-          buffer_.consume(bytes_transferred);
+          log("Received {} bytes", bytes_transferred);
+          // std::string data(
+          //     buffers_begin(buffer_.data()),
+          //     buffers_begin(buffer_.data()) + static_cast<std::ptrdiff_t>(bytes_transferred));
+          auto begin = buffers_begin(buffer_.data());
+          auto end   = buffers_end(buffer_.data());
+          auto data  = std::string(begin, end);
+          buffer_.consume(end - begin);
+          log("buffer size: {}", buffer_.size());
           request_ctx_.addBody(data);
-
+          log("Received body: {}", data);
           size_t received = request_ctx_.getBody().size();
+          log("Received body size: {}", received);
           if (received < length) {
             // 继续读取剩余部分
+            log("Continue reading body...");
             async_read(*socket_, buffer_, transfer_at_least(1), handler);
           } else {
             processBodyComplete();
@@ -266,6 +355,7 @@ auto HTTPHandler<Socket>::getBodyWithLength(std::size_t length) -> void {
         }
       };
 
+  log("Before async_read, buffer size: {}", buffer_.size());
   // 先检查缓冲区有无需要的数据, 再异步读取
   if (buffer_.size() >= length) {
     std::string data(buffers_begin(buffer_.data()),
@@ -291,92 +381,10 @@ auto HTTPHandler<Socket>::getBodyWithChunked() -> void {
   using boost::asio::transfer_exactly;
   using boost::system::error_code;
   // TODO(thebao): 处理chunked transfer encoding
-  std::function<void(const error_code&, size_t)> read_length;
-  std::function<void(const error_code&, size_t)> finish_chunk;
-  auto read_block = [this, read_length](const error_code& ecd, size_t length) {
-    if (!ecd) {
-      auto        begin = buffers_begin(buffer_.data());
-      auto        end   = begin + static_cast<std::ptrdiff_t>(length);
-      std::string data(begin, end);
-      buffer_.consume(length + 2);
-      request_ctx_.addBody(data);
-
-      log("Received chunked body: {}", data);
-
-      // 继续读取下一个块
-      async_read_until(*socket_, buffer_, CRLF, read_length);
-    } else {
-      checkErrorCode(ecd);
-    }
-  };
-
-  read_length = [this, read_block, finish_chunk](const error_code&       ecd,
-                                                 [[maybe_unused]] size_t length) {
-    if (!ecd) {
-      auto        begin = buffers_begin(buffer_.data());
-      auto        end   = buffers_end(buffer_.data());
-      std::string data(begin, end);
-      log("length data: {}", data);
-      // 检查是否有ext
-      size_t body_size{};
-      auto   pos = data.find(';');
-      if (pos != std::string::npos) {
-        // TODO(thebao): 处理ext
-      }
-
-      pos = data.find(CRLF);
-      if (pos == std::string::npos) {
-        error("Read chunked body: expected CRLF");
-        close(socket_);
-      }
-
-      body_size = std::stoul(data.substr(0, pos), nullptr, HEX);
-      buffer_.consume(pos + 2); // 消耗掉CRLF
-      log("Chunked body size: {}", body_size);
-
-      // 传输结束
-      if (body_size == 0) {
-        // Is it safe to directlt consume the second \r\n?
-        async_read_until(*socket_, buffer_, CRLF, finish_chunk);
-        return;
-      }
-
-      if (buffer_.size() >= body_size) {
-        auto        begin = buffers_begin(buffer_.data());
-        auto        end   = begin + static_cast<std::ptrdiff_t>(body_size);
-        std::string data(begin, end);
-        buffer_.consume(body_size);
-        request_ctx_.addBody(data);
-        processBodyComplete();
-        return;
-      }
-
-      async_read(*socket_, buffer_,
-                 transfer_exactly(body_size)
-                 // transfer_at_least(1)
-                 ,
-                 read_block);
-    } else {
-      checkErrorCode(ecd);
-    }
-  };
-
-  finish_chunk = [this](const error_code& ecd, [[maybe_unused]] size_t length) {
-    if (!ecd) {
-      auto begin = buffers_begin(buffer_.data());
-      if (begin[0] == '\r' && begin[1] == '\n') {
-        buffer_.consume(2);
-        processBodyComplete();
-      } else {
-        error("Expected CRLF after last chunk");
-        close(socket_);
-      }
-    } else {
-      checkErrorCode(ecd);
-    }
-  };
-
-  async_read_until(*socket_, buffer_, CRLF, read_length);
+  async_read_until(*socket_, buffer_, CRLF,
+                   [this](const boost::system::error_code& ecd, std::size_t length) {
+                     read_length(ecd, length);
+                   });
 }
 
 // TODO(thebao): 处理异步post请求体
@@ -387,6 +395,9 @@ void HTTPHandler<Socket>::processRequest() {
   request_ctx_        = Parser::parse(request);
   // ----------------- Request -----------------
   if (request_ctx_.getMethod() == "POST") {
+    if (request_ctx_.getHeader("Expect") == "100-continue") {
+      sendContinue();
+    }
     getBody();
   } else {
     processBodyComplete();
@@ -440,6 +451,19 @@ void HTTPHandler<Socket>::sendResponse(const std::string& response, bool keep_al
                   }
                 }
               });
+}
+
+template <typename Socket>
+void HTTPHandler<Socket>::sendContinue() {
+  using boost::asio::buffer;
+  using boost::asio::write;
+  using boost::system::error_code;
+
+  std::string msg = "HTTP/1.1 100 Continue\r\n\r\n";
+
+  auto self = this->shared_from_this();
+  write(*socket_, buffer(msg));
+  log("Ready to receive body.");
 }
 
 #endif // PROTOCOL_HTTP_HANDLER_H

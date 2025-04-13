@@ -7,8 +7,17 @@
 auto Router::forward(RequestContext& ctx) -> ResponseContext {
   ResponseContext result;
 
+  if (ctx.getUri() == "/") {
+    ctx.setUri("/index.html");
+  }
+
+  // TODO(thebao): 处理100
+  // Expect: 100-continue
+  // 则先发送100响应
+
   // 验证缓存
   if (ctx.getMethod() == "GET") {
+    log("Checking cache for {}", ctx.getUri());
     auto time        = ctx.getHeader("If-Modified-Since");
     auto etag        = ctx.getHeader("If-None-Match");
     auto last_modify = getLastModify(ctx.getUri());
@@ -62,9 +71,16 @@ auto Router::forward(RequestContext& ctx) -> ResponseContext {
   }
 
   // 填写缓存头
+  // TODO(thebao): GET和HEAD需要
   result.addHeader("Last-Modified", getLastModify(ctx.getUri()));
   result.addHeader("ETag", getEtag(ctx.getUri()));
   result.addHeader("Cache-Control", "public, max-age=3600");
+
+  if (ctx.getMethod() == "HEAD") {
+    result.setBody("");
+  }
+
+  result.addHeader("Agent", "BaoZongHuang");
 
   return result;
 }

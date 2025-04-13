@@ -34,6 +34,7 @@ class Service {
   // 可以使用protected, 但其实这样的接口可以被抽出来复用, 使用组合来代替继承
   static auto innerError(ResponseContext& response, const std::string& msg) -> ResponseContext;
   static auto redirect(ResponseContext& response, const std::string& location) -> ResponseContext;
+  static auto unAuthorized(ResponseContext& response, const std::string& msg) -> ResponseContext;
 };
 
 class UnimplementedService : public Service {

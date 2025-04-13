@@ -4,6 +4,8 @@
 
 #include "application/context.hh"
 #include "application/file_service.hh"
+#include "application/upload_service.hh"
+#include "logging/logger.hh"
 #include "protocol/parser.hh"
 
 LoginService::LoginService()
@@ -38,15 +40,32 @@ auto LoginService::handle(RequestContext& ctx) -> ResponseContext {
     }
   }
 
-  auto body     = ctx.getBody();
-  auto params   = Parser::parseBody(body, ContentType::FORM);
-  auto username = params["username"];
-  auto password = params["password"];
+  // auto body     = ctx.getBody();
+  // auto params   = Parser::parseBody(body, ContentType::FORM);
+  // auto username = params["username"];
+  // auto password = params["password"];
+  std::string username;
+  std::string password;
+  auto        ctype = ctx.getHeader("Content-Type");
+  if (ctype.contains("multipart/form-data")) {
+    auto boundary = ctype.substr(ctype.find("boundary=") + 9);
+    auto forms    = parseMultipartFormData(ctx.getBody(), boundary);
 
+    for (const auto& form : forms) {
+      if (form.name == "username") {
+        username = form.content;
+      } else if (form.name == "password") {
+        password = form.content;
+      }
+    }
+  }
+  Logger::getLogger("login service").info("username: {}, password: {}", username, password);
   auto valid = authenticator_->authenticate(username, password);
   if (!valid) {
     res.setStatusCode(StatusCode::UNAUTHORIZED);
     res.setBody("Login failed with invalid username or password");
+    res.addHeader("Content-Length", std::to_string(res.getBody()->size()));
+    res.addHeader("Content-Type", "text/plain");
     return res;
   }
 
@@ -56,8 +75,9 @@ auto LoginService::handle(RequestContext& ctx) -> ResponseContext {
 
   // 创建session
   // Set-Cookie: sessionid=abc123; Path=/; HttpOnly
-  auto sessionid = session_manager_->create_session();
-  cookie         = "sessionid=" + sessionid + "; Path=" + valid_path_ + "; HttpOnly";
+  auto [sessionid, exireat] = session_manager_->create_session();
+  cookie =
+      "sessionid=" + sessionid + "; Path=" + valid_path_ + "; Expires=" + exireat + "; HttpOnly";
   res.addHeader("Set-Cookie", cookie);
 
   return res;

@@ -7,11 +7,14 @@
 #include <string>
 #include <unordered_map>
 
+// TODO(thebao): 优化include, 其实只需要提供服务类的声明. 考虑在哪里统一注册
 #include "application/cgi_service.hh"
+#include "application/control_service.hh"
 #include "application/file_service.hh"
 #include "application/img_service.hh"
 #include "application/login_service.hh"
 #include "application/service.hh"
+#include "application/upload_service.hh"
 #include "buffer/session.hh"
 #include "common/macro.hh"
 
@@ -25,12 +28,14 @@ class Router {
  public:
   auto forward(RequestContext& ctx) -> ResponseContext;
 
-  auto registerService(const std::string& uri, Service* service) -> void {
+  auto registerService(const std::string& uri, Service* service) -> Router& {
     services_[uri] = service;
+    return *this;
   }
 
-  auto registerPreService(const std::string& uri, Service* service) -> void {
+  auto registerPreService(const std::string& uri, Service* service) -> Router& {
     preServices_[uri] = service;
+    return *this;
   }
 
   // 默认构造的Service调用handle会导致address boundry error
@@ -80,14 +85,17 @@ class ServiceFactory {
     static bool   initialized = false;
     if (!initialized) {
       initialized = true;
-      router.registerService("/", &DefaultService::getInstance());
-      router.registerService("/index.html", &DefaultService::getInstance());
-      router.registerService("/favicon.ico", &ImgService::getInstance());
-      router.registerService("/login", &LoginService::getInstance());
-      router.registerService("/dashboard", &DefaultService::getInstance());
-      router.registerService("/cache-test", &DefaultService::getInstance());
-
-      router.registerPreService("/cgi-bin/", &CgiService::getInstance());
+      // 精确路由
+      router.registerService("/", &DefaultService::getInstance())
+          .registerService("/index.html", &DefaultService::getInstance())
+          .registerService("/favicon.ico", &ImgService::getInstance())
+          .registerService("/login", &LoginService::getInstance())
+          .registerService("/dashboard", &DefaultService::getInstance())
+          .registerService("/cache-test", &DefaultService::getInstance())
+          .registerService("/upload", &UploadService::getInstance())
+          // 前缀路由
+          .registerPreService("/cgi-bin/", &CgiService::getInstance())
+          .registerPreService("/ctrl/", &ControlService::getInstance());
     }
     return router;
   }
