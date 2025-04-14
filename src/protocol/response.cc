@@ -4,9 +4,18 @@
 
 #include "protocol/compress.hh"
 
-auto HTTPResponse::buildWithContext() const -> std::string {
+auto HTTPResponse::buildWithContext() -> std::string {
   std::string response = "HTTP/1.1 " + std::to_string(static_cast<int>(ctx_.getStatusCode())) +
                          " " + ctx_.getStatusMessage() + CRLF;
+
+  // 正文相关逻辑在Service中处理, 这里只负责简单拼接
+  auto body = ctx_.getBody().value_or("");
+  if (ctx_.getHeader("Content-Encoding") == "gzip") {
+    body     = Compressor::compress(body);
+    auto len = std::to_string(body.size());
+    ctx_.addHeader("Content-Length", len);
+  }
+
   for (const auto& [field, value] : ctx_.getHeaders()) {
     response += field;
     response += ": ";
@@ -15,12 +24,7 @@ auto HTTPResponse::buildWithContext() const -> std::string {
   }
   response += CRLF;
 
-  // 正文相关逻辑在Service中处理, 这里只负责简单拼接
-  response += ctx_.getBody().value_or("");
+  response += body;
 
-  // 应该在哪里给ResponseContext添加Content-Encoding呢?
-  if (ctx_.getHeader("Content-Encoding") == "gzip") {
-    response = Compressor::compress(response);
-  }
   return response;
 }

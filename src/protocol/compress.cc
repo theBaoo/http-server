@@ -11,7 +11,8 @@
 
 auto Compressor::compress(const std::string &raw) -> std::string {
   z_stream stream{};
-  int      ret = deflateInit(&stream, Z_DEFAULT_COMPRESSION);
+  int      ret =
+      deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 + 16, 8, Z_DEFAULT_STRATEGY);
   if (ret != Z_OK) {
     std::cerr << "deflateInit failed with error code: " << ret << std::endl;
     throw std::runtime_error("Failed to initialize zlib");
