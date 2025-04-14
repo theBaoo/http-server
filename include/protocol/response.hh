@@ -79,7 +79,7 @@ class HTTPResponse {
     return response;
   }
 
-  [[nodiscard]] auto buildWithContext() const -> std::string;
+  [[nodiscard]] auto buildWithContext() -> std::string;
 
   // 获取当前方法（用于调试或外部逻辑）
   [[nodiscard]] auto getMethod() const -> std::string {

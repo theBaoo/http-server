@@ -6,38 +6,44 @@
 #include <iostream> // 添加日志输出
 #include <string>
 #include <vector>
+#include <array> // Required for std::array
 
 #include "logging/logger.hh"
 
 auto Compressor::compress(const std::string &raw) -> std::string {
   z_stream stream{};
-  int      ret = deflateInit(&stream, Z_DEFAULT_COMPRESSION);
+  int      ret =
+      deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 + 16, 8, Z_DEFAULT_STRATEGY);
   if (ret != Z_OK) {
-    std::cerr << "deflateInit failed with error code: " << ret << std::endl;
+    error("deflateInit failed with error code: {}", ret);
     throw std::runtime_error("Failed to initialize zlib");
   }
 
   stream.next_in  = reinterpret_cast<Bytef *>(const_cast<char *>(raw.data())); // NOLINT
   stream.avail_in = static_cast<uInt>(raw.size());
 
-  std::vector<Bytef> buffer(raw.size() + 12); // 12 bytes for zlib header
-  stream.next_out  = buffer.data();
-  stream.avail_out = static_cast<uInt>(buffer.size());
+  constexpr size_t              chunk_size = 16384; // 16KB 块，经验值
+  std::vector<char>             out_buffer;
+  std::array<Bytef, chunk_size> temp{};
 
-  ret = deflate(&stream, Z_FINISH);
-  if (ret != Z_STREAM_END) {
-    std::cerr << "deflate failed with error code: " << ret << std::endl;
-    deflateEnd(&stream);
-    throw std::runtime_error("Failed to compress data");
-  }
+  do {
+    stream.next_out  = temp.data();
+    stream.avail_out = static_cast<uInt>(temp.size());
 
-  std::cerr << "Compression successful, compressed size: " << stream.total_out << std::endl;
+    ret = deflate(&stream, Z_FINISH);
 
-  std::string compressed_data(reinterpret_cast<char *>(buffer.data()), stream.total_out); // NOLINT
+    if (ret != Z_OK && ret != Z_STREAM_END) {
+      deflateEnd(&stream);
+      throw std::runtime_error("deflate failed during compression");
+    }
+
+    size_t bytes_written = temp.size() - stream.avail_out;
+    out_buffer.insert(out_buffer.end(), temp.data(), temp.data() + bytes_written);
+  } while (ret != Z_STREAM_END);
 
   deflateEnd(&stream);
 
-  return compressed_data;
+  return { out_buffer.begin(), out_buffer.end() };
 }
 
 auto Compressor::decompress(const std::string &compressed) -> std::string {

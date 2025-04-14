@@ -62,8 +62,10 @@ auto Router::forward(RequestContext& ctx) -> ResponseContext {
   }
 
   // 填写响应头
-  if (ctx.getHeader("Accept-Encoding") == "gzip") {
+  // 压缩编码尽可能采用gzip
+  if (ctx.getHeader("Accept-Encoding").find("gzip") != std::string::npos) {
     result.addHeader("Content-Encoding", "gzip");
+    // result.addHeader("Transfer-Encoding", "chunked");
   }
 
   if (ctx.getHeader("Connection") == "close") {

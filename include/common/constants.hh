@@ -23,5 +23,6 @@ const std::string stt    = root + "/static";
 const std::string cert   = root + "/certificate/cert.pem";
 const std::string key    = root + "/certificate/key.pem";
 const std::string cookie = root + "/data/cookie";
+const std::string file   = root + "/data/files/";
 
 #endif // COMMON_CONSTANTS_H

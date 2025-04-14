@@ -29,6 +29,8 @@ struct FormInfo {
   std::string                content;
 };
 
+auto saveFile(const std::string& filename, const std::string& content) -> bool;
+
 auto parseMultipartFormData(const std::string_view& body, const std::string& boundary)
     -> std::vector<FormInfo>;
 
