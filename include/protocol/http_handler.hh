@@ -6,6 +6,7 @@
 #include <boost/asio/streambuf.hpp>
 #include <cstddef>
 #include <functional>
+#include <istream>
 #include <memory>
 #include <string>
 
@@ -17,6 +18,7 @@
 #include "boost/asio/error.hpp"
 #include "boost/asio/read.hpp"
 #include "boost/system/detail/error_code.hpp"
+#include "buffer/session.hh"
 #include "common/macro.hh"
 #include "logging/logger.hh"
 #include "protocol/parser.hh"
@@ -146,6 +148,7 @@ class HTTPHandler : public std::enable_shared_from_this<HTTPHandler<Socket>>, pu
 
   // 异步读取POST请求体
   auto getBody() -> void;
+  auto getBodyWithLen(std::size_t length) -> void;
   auto getBodyWithLength(std::size_t length) -> void;
   auto getBodyWithChunked() -> void;
   //  chunked transfer encoding
@@ -307,7 +310,7 @@ auto HTTPHandler<Socket>::getBody() -> void {
   } else if (!content_length.empty()) {
     std::size_t length = std::stoul(content_length);
     log("Expected body length {}", length);
-    getBodyWithLength(length);
+    getBodyWithLen(length);
   } else {
     processBodyComplete();
   }
@@ -321,19 +324,19 @@ auto HTTPHandler<Socket>::getBodyWithLength(std::size_t length) -> void {
   using boost::asio::buffers_end;
   using boost::asio::transfer_at_least;
   using boost::system::error_code;
-  buffer_.prepare(length * 2);
 
   std::function<void(const error_code&, size_t)> handler =
       [this, length, &handler](const error_code& ecd, std::size_t bytes_transferred) mutable {
         if (!ecd) {
           log("Received {} bytes", bytes_transferred);
-          // std::string data(
-          //     buffers_begin(buffer_.data()),
-          //     buffers_begin(buffer_.data()) + static_cast<std::ptrdiff_t>(bytes_transferred));
-          auto begin = buffers_begin(buffer_.data());
-          auto end   = buffers_end(buffer_.data());
-          auto data  = std::string(begin, end);
-          buffer_.consume(end - begin);
+          buffer_.commit(bytes_transferred);
+          auto buffers = buffer_.data();
+          std::string data(boost::asio::buffers_begin(buffers),
+                             boost::asio::buffers_begin(buffers) + static_cast<std::ptrdiff_t>(bytes_transferred));
+          // std::string data(bytes_transferred, '\0');                    // 正确分配
+          // boost::asio::buffer_copy(boost::asio::buffer(data), buffers); // 安全拷贝
+          buffer_.consume(bytes_transferred);
+        
           log("buffer size: {}", buffer_.size());
           request_ctx_.addBody(data);
           log("Received body: {}", data);
@@ -367,6 +370,40 @@ auto HTTPHandler<Socket>::getBodyWithLength(std::size_t length) -> void {
   }
 
   async_read(*socket_, buffer_, transfer_at_least(1), handler);
+}
+
+template <typename Socket>
+auto HTTPHandler<Socket>::getBodyWithLen(std::size_t elength) -> void {
+  using boost::asio::async_read;
+  using boost::asio::transfer_at_least;
+  using boost::system::error_code;
+  auto self = this->shared_from_this();
+
+  async_read(*socket_, buffer_, transfer_at_least(1),
+    [this, self, elength](const error_code& ecd, size_t length) {
+    if (!ecd) {
+      log("Received {} bytes", length);
+      buffer_.commit(length);
+      auto buffers = buffer_.data();
+      std::string data(boost::asio::buffers_begin(buffers),
+                        boost::asio::buffers_begin(buffers) + static_cast<std::ptrdiff_t>(length));
+      buffer_.consume(length);
+      request_ctx_.addBody(data);
+      log("Received body: {}", data);
+
+      auto received = request_ctx_.getBody().size();
+      if (elength > received) {
+        getBodyWithLen(elength);
+      } else if (elength == received) {
+        processBodyComplete();
+      } else {
+        error("Received body size {} exceeds expected size {}", received, elength);
+        close(socket_);
+      }
+    } else {
+      checkErrorCode(ecd);
+    }
+  });
 }
 
 // async_read_until: 按分隔符读取

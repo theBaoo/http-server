@@ -1,6 +1,7 @@
 #include "application/upload_service.hh"
 
 #include <cstddef>
+#include <fstream>
 #include <string_view>
 
 #include "common/enum.hh"
@@ -48,15 +49,40 @@ auto UploadService::handle(RequestContext& ctx) -> ResponseContext {
   log("boundary: {}", boundary);
   log("body: {}", ctx.getBody());
 
-  res.setStatusCode(StatusCode::NOT_IMPLEMENTED);
-  res.setStatusMessage("Unimplemented");
-  res.addHeader("Content-Type", "text/plain");
-  res.setBody("Unimplemented");
+  auto parts = parseMultipartFormData(ctx.getBody(), boundary);
+  for (auto& part : parts) {
+    if (!part.filename.has_value()) { continue; }
+    if (!saveFile(part.filename.value(), part.content)) {
+      res.setStatusCode(StatusCode::INTERNAL_SERVER_ERROR);
+      res.setStatusMessage("Internal Server Error");
+      res.addHeader("Content-Type", "text/plain");
+      res.setBody("Failed to save file");
+    } else {
+      log("Saved file: {}", part.filename.value());
+      res.setStatusCode(StatusCode::OK);
+      res.setStatusMessage("OK");
+      res.addHeader("Content-Type", "text/plain");
+      res.setBody("File saved successfully");
+    }  
+  }
+
   res.addHeader("Content-Length", std::to_string(res.getBody()->size()));
   res.addHeader("Connection", "close");
   return res;
 }
 
+auto saveFile(const std::string& filename, const std::string& content) -> bool // NOLINT
+  {
+  std::string path = file + filename;
+  std::ofstream file(path, std::ios::binary);
+  if (!file) {
+    return false; // Failed to open file
+  }
+  file.write(content.data(), static_cast<std::streamsize>(content.size()));
+  return true;
+}
+
+// 一个part对应一个文件
 auto parseMultipartFormData(const std::string_view& body, const std::string& boundary)
     -> std::vector<FormInfo> {
   std::vector<FormInfo> result;
